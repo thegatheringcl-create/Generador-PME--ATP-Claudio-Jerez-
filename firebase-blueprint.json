@@ -1,0 +1,30 @@
+{
+  "entities": {
+    "Proposal": {
+      "title": "PME Proposal",
+      "description": "A generated PME action proposal saved by a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who saved the proposal." },
+        "userEmail": { "type": "string", "description": "The email of the user." },
+        "establishment": { "type": "string", "description": "The educational establishment name." },
+        "dimension": { "type": "string" },
+        "subdimension": { "type": "string" },
+        "objEstrategico": { "type": "string" },
+        "metaEstrategica": { "type": "string" },
+        "estrategia": { "type": "string" },
+        "nudosCriticos": { "type": "string" },
+        "cantidad": { "type": "number" },
+        "resultHtml": { "type": "string", "description": "The generated HTML content." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "establishment", "dimension", "subdimension", "resultHtml", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/proposals/{proposalId}": {
+      "schema": "Proposal",
+      "description": "Collection of saved PME proposals."
+    }
+  }
+}

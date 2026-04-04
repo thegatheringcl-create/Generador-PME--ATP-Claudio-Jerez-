@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: proposals
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required) - Owner's UID
+    //   - userEmail: string (optional)
+    //   - establishment: string (required)
+    //   - dimension: string (required)
+    //   - subdimension: string (required)
+    //   - objEstrategico: string (optional)
+    //   - metaEstrategica: string (optional)
+    //   - estrategia: string (optional)
+    //   - nudosCriticos: string (optional)
+    //   - cantidad: number (optional)
+    //   - resultHtml: string (required) - The generated content
+    //   - createdAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidProposal(data) {
+      return data.userId is string &&
+             data.establishment is string &&
+             data.dimension is string &&
+             data.subdimension is string &&
+             data.resultHtml is string &&
+             data.createdAt is timestamp;
+    }
+
+    match /proposals/{proposalId} {
+      // Users can only see their own proposals
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // Users can create proposals for themselves
+      allow create: if isAuthenticated() && 
+                    request.resource.data.userId == request.auth.uid &&
+                    isValidProposal(request.resource.data);
+      
+      // Users can delete their own proposals
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      
+      // No updates allowed for now to maintain integrity of generated proposals
+      allow update: if false;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}

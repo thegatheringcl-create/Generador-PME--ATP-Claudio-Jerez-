@@ -1,0 +1,57 @@
+/* Custom styles for Generador de Acciones PME */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.bg-pme-primary { background-color: #2c3e50; }
+.text-pme-primary { color: #2c3e50; }
+.bg-pme-secondary { background-color: #3498db; }
+.text-pme-secondary { color: #3498db; }
+.bg-pme-accent { background-color: #e67e22; }
+.text-pme-accent { color: #e67e22; }
+.bg-pme-light { background-color: #ecf0f1; }
+.bg-pme-danger { background-color: #e74c3c; }
+.bg-pme-bg { background-color: #f4f7f6; }
+
+/* Scrollbar styles */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    body {
+        background-color: white !important;
+    }
+    .p-6, .sm:p-8 {
+        padding: 0 !important;
+    }
+    #resultArea {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}

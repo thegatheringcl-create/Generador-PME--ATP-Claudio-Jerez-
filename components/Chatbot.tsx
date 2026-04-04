@@ -8,29 +8,12 @@ interface ChatbotProps {
     onClose: () => void;
 }
 
-// Initialize the GoogleGenAI client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export default function Chatbot({ onClose }: ChatbotProps) {
-    const [chat, setChat] = useState<Chat | null>(null);
     const [history, setHistory] = useState<ChatMessage[]>([]);
     const [userInput, setUserInput] = useState<string>('');
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const chatContainerRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        const initChat = () => {
-            const chatInstance = ai.chats.create({
-                model: 'gemini-3-pro-preview',
-                config: {
-                    systemInstruction: 'Eres un asistente experto en educación y en el sistema PME de Chile. Responde las preguntas de los usuarios de forma concisa y útil.',
-                },
-            });
-            setChat(chatInstance);
-        };
-        initChat();
-    }, []);
-    
     useEffect(() => {
         // Scroll to the bottom of the chat on new messages
         if (chatContainerRef.current) {
@@ -40,14 +23,28 @@ export default function Chatbot({ onClose }: ChatbotProps) {
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!userInput.trim() || !chat || isLoading) return;
+        if (!userInput.trim() || isLoading) return;
 
         const userMessage: ChatMessage = { role: 'user', parts: [{ text: userInput }] };
-        setHistory(prev => [...prev, userMessage]);
+        const newHistory = [...history, userMessage];
+        setHistory(newHistory);
         setUserInput('');
         setIsLoading(true);
 
         try {
+            const apiKey = process.env.GEMINI_API_KEY;
+            if (!apiKey) {
+                throw new Error("GEMINI_API_KEY no está configurada.");
+            }
+            const ai = new GoogleGenAI({ apiKey });
+            const chat = ai.chats.create({
+                model: 'gemini-3.1-pro-preview',
+                config: {
+                    systemInstruction: 'Eres un asistente experto en educación y en el sistema PME de Chile. Responde las preguntas de los usuarios de forma concisa y útil.',
+                },
+                history: history, // Use current history to maintain context
+            });
+
             const stream = await chat.sendMessageStream({ message: userInput });
             
             let modelResponse = '';

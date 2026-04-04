@@ -166,6 +166,43 @@ export const estandaresPME = {
   }
 };
 
+export const modeloEscuelaTotal = {
+  titulo: "Modelo de Escuela Total (o de Respuesta a la Intervención)",
+  descripcion: "Busca que la escuela no solo reaccione a los problemas, sino que construya un entorno preventivo.",
+  niveles: [
+    {
+      nivel: "Nivel 1: Promoción Universal (80-90% de la población)",
+      definicion: "Establecer expectativas claras y compartidas sobre el comportamiento y la convivencia, antes de que aparezcan los conflictos.",
+      estrategias: [
+        "Acuerdos de convivencia: Definir colectivamente 3 a 5 valores positivos (ej. Respeto, Esfuerzo, Seguridad) y enseñarlos explícitamente en clase.",
+        "Enseñanza socioemocional: Incluir en el currículo habitual actividades sobre empatía, autoconocimiento y gestión de emociones.",
+        "Reconocimiento positivo: Implementar sistemas donde se premie o refuerce verbalmente a quienes cumplen con las expectativas de convivencia.",
+        "Participación docente: Capacitar a todo el staff para que modelen las conductas que se esperan de los alumnos."
+      ]
+    },
+    {
+      nivel: "Nivel 2: Apoyo Focalizado (5-15% de la población)",
+      definicion: "Intervención en pequeños grupos diseñada para proporcionar un refuerzo rápido y eficiente de habilidades específicas.",
+      estrategias: [
+        "Check-in / Check-out: Un mentor recibe al alumno al inicio del día para establecer metas y lo despide al final para evaluar cómo le fue.",
+        "Grupos de habilidades sociales: Talleres dirigidos por psicólogos o psicopedagogos para practicar asertividad o resolución de problemas.",
+        "Tutoría entre pares: Estudiantes líderes apoyan a compañeros que necesitan mediación o guía académica/social.",
+        "Monitoreo de datos: Uso de planillas de asistencia o reportes de conducta para identificar tempranamente quién necesita este apoyo."
+      ]
+    },
+    {
+      nivel: "Nivel 3: Intervenciones de Mayor Intensidad (1-5% de la población)",
+      definicion: "Apoyo individualizado y clínico, diseñado a medida de las necesidades del estudiante, integrando a menudo a la familia y especialistas externos.",
+      estrategias: [
+        "Planes de Apoyo Individual (PAI): Diseño de una ruta pedagógica y emocional específica para el alumno, con metas diarias y apoyos personalizados.",
+        "Evaluación Funcional de la Conducta: Análisis profundo de por qué un estudiante actúa de cierta forma para reemplazar esa conducta por una funcional.",
+        "Redes de apoyo externo: Coordinación directa con servicios de salud mental (COSAM), protección de derechos (OPD) o especialistas médicos.",
+        "Protocolos de crisis: Planes de acción inmediatos para situaciones de violencia extrema o ideación suicida, garantizando la seguridad de todos."
+      ]
+    }
+  ]
+};
+
 export const ejemplosRazonamientoIndicadores = `
 Ejemplo A: Liderazgo Directivo
 Objetivo Estratégico (Liderazgo): Fortalecer el liderazgo pedagógico del equipo directivo para incidir en los aprendizajes.

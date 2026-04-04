@@ -42,17 +42,14 @@ interface MetaEstrategicaParams {
 
 // Helper to get a fresh instance of GoogleGenAI with the latest API key
 const getAiInstance = () => {
-    // En Vite/Vercel se usa import.meta.env
-    let apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    
-    // Si no existe (estamos en el editor de AI Studio), intentamos process.env
-    if (!apiKey && typeof process !== 'undefined') {
-        apiKey = process.env.GEMINI_API_KEY;
-    }
+    // Intentamos todas las combinaciones posibles para no fallar
+    const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || 
+                   (process.env.GEMINI_API_KEY as string) ||
+                   (process.env.VITE_GEMINI_API_KEY as string);
     
     if (!apiKey) {
-        console.error("Error: VITE_GEMINI_API_KEY no encontrada.");
-        throw new Error("Configuración incompleta: No se encontró la clave de API de Gemini. Por favor, configúrala en Vercel como VITE_GEMINI_API_KEY.");
+        console.error("ERROR CRÍTICO: No se encontró VITE_GEMINI_API_KEY en Vercel.");
+        throw new Error("Error de configuración: Por favor, asegúrate de haber agregado VITE_GEMINI_API_KEY en los ajustes de Vercel.");
     }
     
     return new GoogleGenAI({ apiKey });

@@ -57,15 +57,15 @@ const getAiInstance = () => {
 
 // Using robust models for complex educational context generation.
 const complexModelsToTry = [
+    'gemini-3.1-pro-preview',
     'gemini-3-flash-preview',
     'gemini-3.1-flash-preview',
-    'gemini-flash-latest',
 ];
 
 // Using fast models for suggestions.
 const fastModelsToTry = [
     'gemini-3-flash-preview',
-    'gemini-flash-latest',
+    'gemini-3.1-flash-preview',
 ];
 
 
@@ -448,6 +448,7 @@ export const generateSmartObjective = async (params: {
         - No incluyas títulos ni etiquetas, solo el texto del objetivo.
     `;
 
+    let lastError: Error | null = null;
     for (const modelName of fastModelsToTry) {
         try {
             const response = await ai.models.generateContent({
@@ -458,9 +459,10 @@ export const generateSmartObjective = async (params: {
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
         } catch (error) {
             console.error(`Error con el modelo ${modelName}:`, error);
+            lastError = error as Error;
         }
     }
-    throw new Error("Error al generar el objetivo SMART.");
+    throw new Error(`Error al generar el objetivo SMART: ${lastError?.message || 'Todos los modelos fallaron'}`);
 };
 
 export const generateObjectiveFromIdeas = async (params: {
@@ -496,6 +498,7 @@ export const generateObjectiveFromIdeas = async (params: {
         - No incluyas títulos ni etiquetas, solo el texto del objetivo.
     `;
 
+    let lastError: Error | null = null;
     for (const modelName of fastModelsToTry) {
         try {
             const response = await ai.models.generateContent({
@@ -506,9 +509,10 @@ export const generateObjectiveFromIdeas = async (params: {
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
         } catch (error) {
             console.error(`Error con el modelo ${modelName}:`, error);
+            lastError = error as Error;
         }
     }
-    throw new Error("Error al generar el objetivo a partir de ideas.");
+    throw new Error(`Error al generar el objetivo a partir de ideas: ${lastError?.message || 'Todos los modelos fallaron'}`);
 };
 
 export const combineObjectives = async (params: {
@@ -553,6 +557,7 @@ export const combineObjectives = async (params: {
         No menciones que estás combinando objetivos, simplemente entrega el texto del nuevo objetivo estratégico resultante.
     `;
 
+    let lastError: Error | null = null;
     for (const modelName of fastModelsToTry) {
         try {
             const response = await ai.models.generateContent({
@@ -563,9 +568,10 @@ export const combineObjectives = async (params: {
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
         } catch (error) {
             console.error(`Error con el modelo ${modelName}:`, error);
+            lastError = error as Error;
         }
     }
-    throw new Error("No se pudieron combinar los objetivos.");
+    throw new Error(`No se pudieron combinar los objetivos: ${lastError?.message || 'Todos los modelos fallaron'}`);
 };
 
 export const generateSmartGoal = async (params: {
@@ -612,6 +618,7 @@ export const generateSmartGoal = async (params: {
         - No incluyas títulos ni etiquetas, solo el texto de la meta.
     `;
 
+    let lastError: Error | null = null;
     for (const modelName of fastModelsToTry) {
         try {
             const response = await ai.models.generateContent({
@@ -622,9 +629,10 @@ export const generateSmartGoal = async (params: {
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
         } catch (error) {
             console.error(`Error con el modelo ${modelName}:`, error);
+            lastError = error as Error;
         }
     }
-    throw new Error("Error al generar la meta SMART.");
+    throw new Error(`Error al generar la meta SMART: ${lastError?.message || 'Todos los modelos fallaron'}`);
 };
 
 export const generateSmartActionsAndIndicators = async (params: {
@@ -682,6 +690,7 @@ export const generateSmartActionsAndIndicators = async (params: {
         Genera la propuesta:
     `;
 
+    let lastError: Error | null = null;
     for (const modelName of complexModelsToTry) {
         try {
             const response = await ai.models.generateContent({
@@ -692,7 +701,8 @@ export const generateSmartActionsAndIndicators = async (params: {
             if (text) return text.trim();
         } catch (error) {
             console.error(`Error con el modelo ${modelName}:`, error);
+            lastError = error as Error;
         }
     }
-    throw new Error("Error al generar acciones e indicadores.");
+    throw new Error(`Error al generar acciones e indicadores: ${lastError?.message || 'Todos los modelos fallaron'}`);
 };

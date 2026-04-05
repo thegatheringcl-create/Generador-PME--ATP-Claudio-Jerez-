@@ -137,42 +137,18 @@ export default function PmeGenerator() {
     };
 
     const handlePrint = () => {
-        window.print();
+        setMessage({ type: 'info', text: 'Sugerencia: En la ventana que se abrirá, puedes elegir "Guardar como PDF" para guardar el documento completo.' });
+        setTimeout(() => {
+            window.print();
+        }, 1500);
     };
 
-    const handleSavePdf = async () => {
+    const handleSavePdf = () => {
         if (!result) return;
-        
-        setIsLoading(true);
-        try {
-            const { default: jsPDF } = await import('jspdf');
-            const html2canvas = (await import('html2canvas')).default;
-            
-            const element = document.getElementById('resultArea');
-            if (!element) return;
-
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                logging: false
-            });
-            
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgProps = pdf.getImageProperties(imgData);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`Propuesta_PME_2026_${dimension}_${subdimension}.pdf`);
-            
-            setMessage({ type: 'success', text: 'PDF generado y descargado con éxito.' });
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            setMessage({ type: 'error', text: 'Error al generar el PDF. Por favor, intenta de nuevo.' });
-        } finally {
-            setIsLoading(false);
-        }
+        setMessage({ type: 'info', text: 'Para guardar el documento completo con múltiples hojas, selecciona "Guardar como PDF" en la ventana de impresión.' });
+        setTimeout(() => {
+            window.print();
+        }, 1500);
     };
 
     const handleSaveToDb = async () => {

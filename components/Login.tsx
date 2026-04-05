@@ -94,6 +94,9 @@ export default function Login({ onLogin }: LoginProps) {
                 </form>
                 
                 <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
+                    <p className="text-xs text-gray-500 font-medium mb-1">
+                        Esta herramienta es 100% gratuita y sin fines de lucro.
+                    </p>
                     <p className="text-[10px] text-gray-400">
                         © 2026 Generador de Acciones PME - Todos los derechos reservados
                     </p>

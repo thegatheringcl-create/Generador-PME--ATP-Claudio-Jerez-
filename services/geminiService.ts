@@ -57,8 +57,8 @@ const getAiInstance = () => {
 
 // Using robust models for complex educational context generation.
 const complexModelsToTry = [
-    'gemini-3.1-pro-preview',
     'gemini-3-flash-preview',
+    'gemini-3.1-flash-preview',
     'gemini-flash-latest',
 ];
 

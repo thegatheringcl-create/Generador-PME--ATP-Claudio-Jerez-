@@ -97,6 +97,12 @@ export default function App() {
 
             {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} />}
             <Tutorial />
+
+            {/* Footer de gratuidad */}
+            <div className="mt-8 text-center text-gray-500 text-xs pb-4">
+                <p>Este proyecto es una herramienta <strong>100% gratuita y sin fines de lucro</strong>.</p>
+                <p>Desarrollado para apoyar la gestión escolar. No requiere suscripciones ni pagos.</p>
+            </div>
         </div>
     );
 }

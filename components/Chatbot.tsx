@@ -32,13 +32,17 @@ export default function Chatbot({ onClose }: ChatbotProps) {
         setIsLoading(true);
 
         try {
-            const apiKey = process.env.GEMINI_API_KEY;
+            // Intentamos todas las combinaciones posibles para no fallar en Vercel
+            const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || 
+                           (process.env.GEMINI_API_KEY as string) ||
+                           (process.env.VITE_GEMINI_API_KEY as string);
+                           
             if (!apiKey) {
-                throw new Error("GEMINI_API_KEY no está configurada.");
+                throw new Error("VITE_GEMINI_API_KEY no está configurada.");
             }
             const ai = new GoogleGenAI({ apiKey });
             const chat = ai.chats.create({
-                model: 'gemini-3.1-pro-preview',
+                model: 'gemini-3-flash-preview',
                 config: {
                     systemInstruction: 'Eres un asistente experto en educación y en el sistema PME de Chile. Responde las preguntas de los usuarios de forma concisa y útil.',
                 },

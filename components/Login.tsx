@@ -94,9 +94,16 @@ export default function Login({ onLogin }: LoginProps) {
                 </form>
                 
                 <div className="p-4 bg-gray-50 border-t border-gray-100 text-center">
-                    <p className="text-xs text-gray-500 font-medium mb-1">
-                        Esta herramienta es 100% gratuita y sin fines de lucro.
-                    </p>
+                    <div className="mb-3 text-xs text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                        <p className="mb-1">Este proyecto es una herramienta desarrollada para apoyar la gestión escolar.</p>
+                        <p className="mb-2">Sin fines de lucro, pero requiere la colaboración para pagar el servidor y suscripción Google Cloud IA.</p>
+                        <p className="font-bold text-pme-primary">
+                            Haz Click en el Link para Donar: 5.5 dólares y recibir Usuario<br/>
+                            <a href="https://paypal.me/GeneradorPME" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm inline-block mt-1">
+                                https://paypal.me/GeneradorPME
+                            </a>
+                        </p>
+                    </div>
                     <p className="text-[10px] text-gray-400">
                         © 2026 Generador de Acciones PME - Todos los derechos reservados
                     </p>

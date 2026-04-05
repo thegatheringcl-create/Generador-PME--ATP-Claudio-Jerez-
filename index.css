@@ -7,13 +7,19 @@ body {
 
 .bg-pme-primary { background-color: #2c3e50; }
 .text-pme-primary { color: #2c3e50; }
+.border-pme-primary { border-color: #2c3e50; }
 .bg-pme-secondary { background-color: #3498db; }
 .text-pme-secondary { color: #3498db; }
+.border-pme-secondary { border-color: #3498db; }
 .bg-pme-accent { background-color: #e67e22; }
 .text-pme-accent { color: #e67e22; }
+.border-pme-accent { border-color: #e67e22; }
 .bg-pme-light { background-color: #ecf0f1; }
+.border-pme-light { border-color: #ecf0f1; }
 .bg-pme-danger { background-color: #e74c3c; }
+.border-pme-danger { border-color: #e74c3c; }
 .bg-pme-bg { background-color: #f4f7f6; }
+.border-pme-bg { border-color: #f4f7f6; }
 
 /* Scrollbar styles */
 ::-webkit-scrollbar {

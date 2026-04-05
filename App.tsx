@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import PmeGenerator from './components/PmeGenerator';
 import ObjectiveGoalGenerator from './components/ObjectiveGoalGenerator';
+import DocentePlanner from './components/DocentePlanner';
 import Chatbot from './components/Chatbot';
 import Tutorial from './components/Tutorial';
 import Login from './components/Login';
@@ -127,14 +128,7 @@ export default function App() {
                         url="https://aistudio.google.com/u/0/apps/e9ec9f15-e089-47de-ab11-d1bd45c52f8f?showPreview=true&showAssistant=true" 
                     />
                 )}
-                {activeTab === 'docente' && (
-                    <ExternalApp 
-                        name="Planificador Docente Pro AI" 
-                        icon="person_search"
-                        description="Asistente inteligente para la planificación pedagógica y optimización del tiempo docente."
-                        url="https://aistudio.google.com/u/0/apps/drive/1CC1LKzsSioubv_oguDO1__PhABOveIwT?showPreview=true&showAssistant=true" 
-                    />
-                )}
+                {activeTab === 'docente' && <DocentePlanner />}
             </div>
 
             {/* Chatbot and FAB */}

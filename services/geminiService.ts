@@ -55,6 +55,21 @@ const getAiInstance = () => {
     return new GoogleGenAI({ apiKey });
 };
 
+const formatGeminiError = (error: Error | null): string => {
+    if (!error) return 'Todos los modelos fallaron';
+    const msg = error.message || '';
+    if (msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('RESOURCE_EXHAUSTED')) {
+        return 'Has alcanzado el límite de consultas gratuitas de la IA por minuto. Por favor, espera unos 30 segundos y vuelve a intentarlo.';
+    }
+    if (msg.includes('404') || msg.includes('not found')) {
+        return 'El modelo de IA seleccionado no está disponible temporalmente.';
+    }
+    if (msg.includes('API key not valid')) {
+        return 'La clave de API de Gemini no es válida. Revisa la configuración.';
+    }
+    return msg;
+};
+
 // Using robust models for complex educational context generation.
 const complexModelsToTry = [
     'gemini-3.1-pro-preview',
@@ -461,7 +476,7 @@ export const generateSmartObjective = async (params: {
             lastError = error as Error;
         }
     }
-    throw new Error(`Error al generar el objetivo SMART: ${lastError?.message || 'Todos los modelos fallaron'}`);
+    throw new Error(`Error al generar el objetivo SMART: ${formatGeminiError(lastError)}`);
 };
 
 export const generateObjectiveFromIdeas = async (params: {
@@ -511,7 +526,7 @@ export const generateObjectiveFromIdeas = async (params: {
             lastError = error as Error;
         }
     }
-    throw new Error(`Error al generar el objetivo a partir de ideas: ${lastError?.message || 'Todos los modelos fallaron'}`);
+    throw new Error(`Error al generar el objetivo a partir de ideas: ${formatGeminiError(lastError)}`);
 };
 
 export const combineObjectives = async (params: {
@@ -570,7 +585,7 @@ export const combineObjectives = async (params: {
             lastError = error as Error;
         }
     }
-    throw new Error(`No se pudieron combinar los objetivos: ${lastError?.message || 'Todos los modelos fallaron'}`);
+    throw new Error(`No se pudieron combinar los objetivos: ${formatGeminiError(lastError)}`);
 };
 
 export const generateSmartGoal = async (params: {
@@ -631,7 +646,7 @@ export const generateSmartGoal = async (params: {
             lastError = error as Error;
         }
     }
-    throw new Error(`Error al generar la meta SMART: ${lastError?.message || 'Todos los modelos fallaron'}`);
+    throw new Error(`Error al generar la meta SMART: ${formatGeminiError(lastError)}`);
 };
 
 export const generateSmartActionsAndIndicators = async (params: {
@@ -703,5 +718,5 @@ export const generateSmartActionsAndIndicators = async (params: {
             lastError = error as Error;
         }
     }
-    throw new Error(`Error al generar acciones e indicadores: ${lastError?.message || 'Todos los modelos fallaron'}`);
+    throw new Error(`Error al generar acciones e indicadores: ${formatGeminiError(lastError)}`);
 };

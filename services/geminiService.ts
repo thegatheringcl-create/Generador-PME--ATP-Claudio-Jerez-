@@ -59,13 +59,12 @@ const getAiInstance = () => {
 const complexModelsToTry = [
     'gemini-3.1-pro-preview',
     'gemini-3-flash-preview',
-    'gemini-3.1-flash-preview',
 ];
 
 // Using fast models for suggestions.
 const fastModelsToTry = [
     'gemini-3-flash-preview',
-    'gemini-3.1-flash-preview',
+    'gemini-3.1-flash-lite-preview',
 ];
 
 

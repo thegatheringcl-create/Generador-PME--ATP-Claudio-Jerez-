@@ -42,11 +42,14 @@ interface MetaEstrategicaParams {
 
 // Helper to get a fresh instance of GoogleGenAI with the latest API key
 const getAiInstance = () => {
-    const apiKey = process.env.GEMINI_API_KEY;
+    // In Vite, we check both process.env (injected via define) and import.meta.env
+    const apiKey = process.env.GEMINI_API_KEY || 
+                   (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) ||
+                   process.env.API_KEY;
     
     if (!apiKey) {
-        console.error("ERROR CRÍTICO: No se encontró la clave de API de Gemini (GEMINI_API_KEY).");
-        throw new Error("Error de configuración: Por favor, asegúrate de que la clave de API de Gemini esté configurada en los ajustes del proyecto.");
+        console.error("ERROR CRÍTICO: No se encontró la clave de API de Gemini.");
+        throw new Error("Error de configuración: Por favor, asegúrate de que la clave de API de Gemini esté configurada en los ajustes del proyecto (Settings).");
     }
     
     return new GoogleGenAI({ apiKey });

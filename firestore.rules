@@ -61,5 +61,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if isOwner(userId);
     }
+
+    match /docente_planning/{userId} {
+      allow read, write: if isOwner(userId);
+    }
   }
 }

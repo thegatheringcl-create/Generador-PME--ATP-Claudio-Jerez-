@@ -19,12 +19,26 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "establishment", "dimension", "subdimension", "resultHtml", "createdAt"]
+    },
+    "DocentePlanning": {
+      "title": "Teacher Planning",
+      "description": "Educational planning data for a teacher.",
+      "type": "object",
+      "properties": {
+        "planning": { "type": "object" },
+        "selectedOAs": { "type": "array", "items": { "type": "string" } },
+        "annualPlan": { "type": "object" }
+      }
     }
   },
   "firestore": {
     "/proposals/{proposalId}": {
       "schema": "Proposal",
       "description": "Collection of saved PME proposals."
+    },
+    "/docente_planning/{userId}": {
+      "schema": "DocentePlanning",
+      "description": "User-specific educational planning data."
     }
   }
 }

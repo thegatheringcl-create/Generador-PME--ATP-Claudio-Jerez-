@@ -2,10 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import PmeGenerator from './components/PmeGenerator';
 import ObjectiveGoalGenerator from './components/ObjectiveGoalGenerator';
+import EvaluadorLector from './components/EvaluadorLector';
+import EvaluadorEid from './components/EvaluadorEid';
 import DocentePlanner from './components/DocentePlanner';
 import Chatbot from './components/Chatbot';
 import Tutorial from './components/Tutorial';
 import Login from './components/Login';
+import { loginAnonymously } from './firebase';
 
 type Tab = 'pme' | 'goals' | 'lector' | 'eid' | 'docente';
 
@@ -21,6 +24,9 @@ export default function App() {
             setIsAuthenticated(true);
             setUserEstablishment(savedAuth);
         }
+        
+        // Ensure user is signed in to Firebase anonymously for Firestore access
+        loginAnonymously().catch(err => console.error("Firebase anonymous login failed:", err));
     }, []);
 
     const handleLogin = (establishment: string) => {
@@ -44,40 +50,13 @@ export default function App() {
             onClick={() => setTab(tabId)}
             className={`flex items-center justify-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium rounded-t-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-pme-secondary focus:ring-offset-2 whitespace-nowrap ${
                 currentTab === tabId
-                    ? 'bg-white text-pme-primary border-b-2 border-pme-secondary'
+                    ? 'bg-white text-pme-primary border-b-2 border-pme-secondary shadow-[0_-2px_10px_-3px_rgba(0,0,0,0.1)]'
                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
             }`}
         >
             <span className="material-symbols-outlined text-sm sm:text-base">{icon}</span>
             {children}
         </button>
-    );
-
-    const ExternalApp: React.FC<{ name: string, url: string, description: string, icon: string }> = ({ name, url, description, icon }) => (
-        <div className="w-full min-h-[500px] bg-white flex flex-col items-center justify-center p-8 text-center">
-            <div className="bg-pme-light p-6 rounded-full mb-6">
-                <span className="material-symbols-outlined text-6xl text-pme-primary">{icon}</span>
-            </div>
-            <h3 className="text-2xl font-bold text-pme-primary mb-4">{name}</h3>
-            <p className="text-gray-600 max-w-md mb-8">
-                {description}
-            </p>
-            <div className="bg-blue-50 border border-blue-100 p-4 rounded-lg mb-8 max-w-lg text-sm text-blue-800">
-                <p className="flex items-center gap-2 justify-center">
-                    <span className="material-symbols-outlined text-base">info</span>
-                    Esta herramienta se abre en una ventana segura externa para garantizar su total funcionalidad y privacidad.
-                </p>
-            </div>
-            <a 
-                href={url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-pme-secondary hover:bg-blue-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105"
-            >
-                <span className="material-symbols-outlined">open_in_new</span>
-                Abrir Herramienta
-            </a>
-        </div>
     );
 
     return (
@@ -101,7 +80,7 @@ export default function App() {
                 </button>
             </div>
 
-            <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar">
+            <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar bg-gray-50 rounded-t-lg">
                 <TabButton tabId="pme" currentTab={activeTab} setTab={setActiveTab} icon="description">Planificador PME</TabButton>
                 <TabButton tabId="goals" currentTab={activeTab} setTab={setActiveTab} icon="target">Objetivos y Metas</TabButton>
                 <TabButton tabId="lector" currentTab={activeTab} setTab={setActiveTab} icon="menu_book">Evaluador Lector</TabButton>
@@ -109,25 +88,11 @@ export default function App() {
                 <TabButton tabId="docente" currentTab={activeTab} setTab={setActiveTab} icon="person_search">Planificador Docente</TabButton>
             </div>
             
-            <div className="bg-white rounded-b-xl shadow-2xl overflow-hidden">
+            <div className="bg-white rounded-b-xl shadow-2xl overflow-hidden min-h-[600px]">
                 {activeTab === 'pme' && <PmeGenerator />}
                 {activeTab === 'goals' && <ObjectiveGoalGenerator />}
-                {activeTab === 'lector' && (
-                    <ExternalApp 
-                        name="Evaluador Lector IA" 
-                        icon="menu_book"
-                        description="Herramienta avanzada para la evaluación y seguimiento de la comprensión lectora asistida por Inteligencia Artificial."
-                        url="https://aistudio.google.com/u/0/apps/c9466e43-5c07-42ad-8581-8ec53a6c8a98?showPreview=true&showAssistant=true" 
-                    />
-                )}
-                {activeTab === 'eid' && (
-                    <ExternalApp 
-                        name="Evaluador EID & Propuesta PME Pro" 
-                        icon="analytics"
-                        description="Análisis profundo de Estándares Indicativos de Desempeño y generación de propuestas estratégicas profesionales."
-                        url="https://aistudio.google.com/u/0/apps/e9ec9f15-e089-47de-ab11-d1bd45c52f8f?showPreview=true&showAssistant=true" 
-                    />
-                )}
+                {activeTab === 'lector' && <EvaluadorLector />}
+                {activeTab === 'eid' && <EvaluadorEid />}
                 {activeTab === 'docente' && <DocentePlanner />}
             </div>
 

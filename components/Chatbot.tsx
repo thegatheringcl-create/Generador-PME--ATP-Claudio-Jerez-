@@ -32,13 +32,10 @@ export default function Chatbot({ onClose }: ChatbotProps) {
         setIsLoading(true);
 
         try {
-            // Intentamos todas las combinaciones posibles para no fallar en Vercel
-            const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || 
-                           (process.env.GEMINI_API_KEY as string) ||
-                           (process.env.VITE_GEMINI_API_KEY as string);
+            const apiKey = process.env.GEMINI_API_KEY;
                            
             if (!apiKey) {
-                throw new Error("VITE_GEMINI_API_KEY no está configurada.");
+                throw new Error("GEMINI_API_KEY no está configurada.");
             }
             const ai = new GoogleGenAI({ apiKey });
             const chat = ai.chats.create({

@@ -42,14 +42,11 @@ interface MetaEstrategicaParams {
 
 // Helper to get a fresh instance of GoogleGenAI with the latest API key
 const getAiInstance = () => {
-    // Intentamos todas las combinaciones posibles para no fallar
-    const apiKey = (import.meta.env.VITE_GEMINI_API_KEY as string) || 
-                   (process.env.GEMINI_API_KEY as string) ||
-                   (process.env.VITE_GEMINI_API_KEY as string);
+    const apiKey = process.env.GEMINI_API_KEY;
     
     if (!apiKey) {
-        console.error("ERROR CRÍTICO: No se encontró VITE_GEMINI_API_KEY en Vercel.");
-        throw new Error("Error de configuración: Por favor, asegúrate de haber agregado VITE_GEMINI_API_KEY en los ajustes de Vercel.");
+        console.error("ERROR CRÍTICO: No se encontró la clave de API de Gemini (GEMINI_API_KEY).");
+        throw new Error("Error de configuración: Por favor, asegúrate de que la clave de API de Gemini esté configurada en los ajustes del proyecto.");
     }
     
     return new GoogleGenAI({ apiKey });
@@ -719,4 +716,102 @@ export const generateSmartActionsAndIndicators = async (params: {
         }
     }
     throw new Error(`Error al generar acciones e indicadores: ${formatGeminiError(lastError)}`);
+};
+
+export const generateAnnualPlan = async (params: {
+    level: string;
+    subject: string;
+    objectives: string[];
+}) => {
+    const ai = getAiInstance();
+    const model = ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Eres un experto en diseño curricular, neurociencias aplicadas a la educación y Diseño Universal para el Aprendizaje (DUA).
+        
+        Tu tarea es crear un PLAN ANUAL DE ESTUDIOS para el nivel "${params.level}" en la asignatura "${params.subject}".
+        
+        Los Objetivos de Aprendizaje (OA) seleccionados son:
+        ${params.objectives.join('\n')}
+        
+        Debes entregar una respuesta en formato JSON con la siguiente estructura:
+        {
+            "units": [
+                {
+                    "number": 1,
+                    "name": "Nombre de la Unidad",
+                    "months": ["MARZO", "ABRIL"],
+                    "objectives": [
+                        {
+                            "id": "OA X",
+                            "description": "Descripción del OA",
+                            "evaluationIndicators": ["Indicador 1", "Indicador 2"]
+                        }
+                    ]
+                }
+            ]
+        }
+        
+        Consideraciones importantes:
+        1. Distribuye los OA de forma lógica entre MARZO y NOVIEMBRE.
+        2. Crea indicadores de evaluación precisos y observables para cada OA.
+        3. El nombre de la unidad debe ser motivador y relacionado con los OA.
+        4. Aplica principios de neurociencia (atención, memoria, emoción) y DUA (múltiples formas de representación, acción y expresión, y compromiso).`,
+        config: {
+            responseMimeType: 'application/json'
+        }
+    });
+
+    const response = await model;
+    return JSON.parse(response.text || '{}');
+};
+
+export const generateUnitPlan = async (params: {
+    level: string;
+    subject: string;
+    unitName: string;
+    objectives: any[];
+    numClasses: number;
+}) => {
+    const ai = getAiInstance();
+    const model = ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: `Eres un experto en planificación pedagógica, neurociencias y DUA.
+        
+        Crea un PLAN DE UNIDAD DIARIO para la unidad "${params.unitName}" del nivel "${params.level}" en "${params.subject}".
+        La unidad tiene ${params.numClasses} clases.
+        
+        Objetivos de la unidad:
+        ${params.objectives.map(o => `${o.id}: ${o.description}`).join('\n')}
+        
+        Debes entregar una respuesta en formato JSON con la siguiente estructura:
+        {
+            "classes": [
+                {
+                    "number": 1,
+                    "objective": "Objetivo de la clase",
+                    "situation": {
+                        "start": "Descripción del inicio (activación de conocimientos previos)",
+                        "development": "Descripción del desarrollo (situación de aprendizaje)",
+                        "end": "Descripción del cierre (proceso de metacognición)"
+                    },
+                    "resources": ["Recurso 1", "Recurso 2"],
+                    "startQuestions": ["Pregunta 1", "Pregunta 2"],
+                    "endQuestions": ["Pregunta 1", "Pregunta 2"]
+                }
+            ]
+        }
+        
+        Consideraciones:
+        1. Cada clase debe tener un objetivo claro y alineado con los OA de la unidad.
+        2. La situación de aprendizaje debe ser estructurada (Inicio, Desarrollo, Cierre).
+        3. Incluye preguntas de activación de conocimientos previos para el inicio.
+        4. Incluye preguntas de metacognición para el cierre.
+        5. Aplica DUA y Neurociencias en cada actividad.`,
+        config: {
+            responseMimeType: 'application/json'
+        }
+    });
+
+    const response = await model;
+    return JSON.parse(response.text || '{}');
 };

@@ -17,6 +17,7 @@ export default function App() {
     const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [userEstablishment, setUserEstablishment] = useState<string>('');
+    const [authError, setAuthError] = useState<string | null>(null);
 
     useEffect(() => {
         const savedAuth = localStorage.getItem('pme_establishment');
@@ -26,7 +27,14 @@ export default function App() {
         }
         
         // Ensure user is signed in to Firebase anonymously for Firestore access
-        loginAnonymously().catch(err => console.error("Firebase anonymous login failed:", err));
+        loginAnonymously().catch(err => {
+            console.error("Firebase anonymous login failed:", err);
+            if (err.code === 'auth/admin-restricted-operation') {
+                setAuthError("El inicio de sesión anónimo está deshabilitado en la Consola de Firebase.");
+            } else {
+                setAuthError(err.message || "Error al conectar con Firebase.");
+            }
+        });
     }, []);
 
     const handleLogin = (establishment: string) => {
@@ -61,6 +69,20 @@ export default function App() {
 
     return (
         <div className="container max-w-6xl mx-auto my-5 sm:my-10 px-4">
+            {authError && (
+                <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between text-amber-800 text-xs shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-amber-600 text-sm">warning</span>
+                        <span>
+                            <strong>Modo limitado:</strong> {authError} 
+                            <a href="https://console.firebase.google.com/project/gen-lang-client-0493179322/authentication/providers" target="_blank" rel="noopener noreferrer" className="ml-2 underline font-bold">Habilitar aquí</a>
+                        </span>
+                    </div>
+                    <button onClick={() => setAuthError(null)} className="text-amber-400 hover:text-amber-600">
+                        <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                </div>
+            )}
             <div className="flex items-center justify-between mb-4 bg-pme-primary p-4 rounded-t-xl shadow-lg">
                 <div className="flex items-center gap-3">
                     <div className="bg-white/20 p-2 rounded-lg">

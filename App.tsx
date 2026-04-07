@@ -27,13 +27,13 @@ export default function App() {
         }
         
         // Ensure user is signed in to Firebase anonymously for Firestore access
-        loginAnonymously().catch(err => {
-            console.error("Firebase anonymous login failed:", err);
-            if (err.code === 'auth/admin-restricted-operation') {
-                setAuthError("El inicio de sesión anónimo está deshabilitado en la Consola de Firebase.");
-            } else {
-                setAuthError(err.message || "Error al conectar con Firebase.");
+        loginAnonymously().then(user => {
+            if (!user) {
+                setAuthError("El guardado en la nube está desactivado. Habilita 'Anónimo' en Firebase para activar esta función.");
             }
+        }).catch(err => {
+            console.error("Firebase login failed:", err);
+            setAuthError(err.message || "Error al conectar con Firebase.");
         });
     }, []);
 

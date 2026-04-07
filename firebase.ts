@@ -24,12 +24,12 @@ export const loginAnonymously = async () => {
     return result.user;
   } catch (error: any) {
     if (error.code === 'auth/admin-restricted-operation') {
-      console.error("ERROR DE CONFIGURACIÓN: El inicio de sesión anónimo está deshabilitado en la Consola de Firebase.");
-      console.error("Por favor, ve a Authentication > Sign-in method y habilita 'Anonymous'.");
+      console.warn("AVISO: El inicio de sesión anónimo está deshabilitado en la Consola de Firebase. El guardado en la nube no funcionará.");
+      return null; // Return null instead of throwing to allow app to load
     } else {
       console.error("Error logging in anonymously:", error);
+      throw error;
     }
-    throw error;
   }
 };
 

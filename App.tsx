@@ -132,16 +132,9 @@ export default function App() {
             {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} />}
             <Tutorial />
 
-            {/* Footer de donación */}
+            {/* Footer informativo */}
             <div className="mt-8 text-center text-gray-600 text-xs pb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 <p className="mb-1">Este proyecto es una herramienta desarrollada para apoyar la gestión escolar.</p>
-                <p className="mb-2">Sin fines de lucro, pero requiere la colaboración para pagar el servidor y suscripción Google Cloud IA.</p>
-                <p className="font-bold text-pme-primary mb-2">
-                    Haz Click en el Link para Donar: 5.5 dólares y recibir Usuario<br/>
-                    <a href="https://paypal.me/GeneradorPME" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm inline-block mt-1">
-                        https://paypal.me/GeneradorPME
-                    </a>
-                </p>
                 <div className="border-t border-gray-200 pt-2 mt-2">
                     <p className="font-bold text-green-700 mb-2">
                         Solicitar Usuario en este Link:<br/>

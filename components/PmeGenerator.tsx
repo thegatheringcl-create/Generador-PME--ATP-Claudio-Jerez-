@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { dataMap, objetivosNormativos, Plan } from '../constants';
 import { estandaresPME } from '../pme-guides';
 import { generatePmeActions, generateStrategicObjectiveSuggestion, generateEstrategia, generateMetaEstrategica } from '../services/geminiService';
@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { db, auth, loginWithGoogle, logout } from '../firebase';
 import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, limit, getDocFromServer, doc } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // Helper function to parse the structured markdown into styled HTML
 function markdownToHtml(markdown: string): string {
@@ -89,6 +91,7 @@ export default function PmeGenerator() {
     const [message, setMessage] = useState<Message | null>(null);
     const [user, setUser] = useState<User | null>(null);
     const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
+    const resultRef = useRef<HTMLDivElement>(null);
 
     // Auth listener
     React.useEffect(() => {
@@ -115,40 +118,64 @@ export default function PmeGenerator() {
         }
     }, [isAuthReady]);
 
+    // Avoid window.confirm as it can break the browser locker behavior in some sandboxed environments
     const handleReset = () => {
-        if (window.confirm('¿Estás seguro de que deseas reiniciar toda la planificación? Se perderán todos los datos ingresados y las propuestas generadas.')) {
-            setDimension('');
-            setSubdimension('');
-            setObjEstrategico('');
-            setMetaEstrategica('');
-            setEstrategia('');
-            setSelectedPlanes([]);
-            setSelectedPlanObjectives({});
-            setCustomPlanObjectives({});
-            setSelectedEstandares([]);
-            setCantidad(1);
-            setUseGoogleSearch(false);
-            setRefineEstrategiaConceptos('');
-            setNudosCriticos('');
-            setResult(null);
-            setMessage(null);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+        setDimension('');
+        setSubdimension('');
+        setObjEstrategico('');
+        setMetaEstrategica('');
+        setEstrategia('');
+        setSelectedPlanes([]);
+        setSelectedPlanObjectives({});
+        setCustomPlanObjectives({});
+        setSelectedEstandares([]);
+        setCantidad(1);
+        setUseGoogleSearch(false);
+        setRefineEstrategiaConceptos('');
+        setNudosCriticos('');
+        setResult(null);
+        setMessage({ type: 'info', text: 'Planificación reiniciada correctamente.' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handlePrint = () => {
-        setMessage({ type: 'info', text: 'Sugerencia: En la ventana que se abrirá, puedes elegir "Guardar como PDF" para guardar el documento completo.' });
-        setTimeout(() => {
-            window.print();
-        }, 1500);
+        setMessage({ type: 'info', text: 'Abriendo ventana de impresión...' });
+        window.print();
     };
 
-    const handleSavePdf = () => {
-        if (!result) return;
-        setMessage({ type: 'info', text: 'Para guardar el documento completo con múltiples hojas, selecciona "Guardar como PDF" en la ventana de impresión.' });
-        setTimeout(() => {
-            window.print();
-        }, 1500);
+    const handleSavePdf = async () => {
+        if (!result || !resultRef.current) return;
+        
+        setIsLoading(true);
+        setMessage({ type: 'info', text: 'Generando archivo PDF, por favor espera...' });
+        
+        try {
+            const element = resultRef.current;
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+            
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            
+            // If the content is longer than one page, we might need to handle it.
+            // For now, simplicity:
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`PME_Propuesta_${dimension.replace(/\s+/g, '_')}.pdf`);
+            
+            setMessage({ type: 'success', text: 'PDF generado y descargado exitosamente.' });
+        } catch (error) {
+            console.error("Error al generar PDF:", error);
+            setMessage({ type: 'error', text: 'Error al generar el PDF. Puedes intentar usando el botón Imprimir y seleccionar "Guardar como PDF".' });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleSaveToDb = async () => {
@@ -776,7 +803,7 @@ export default function PmeGenerator() {
             </div>
 
             {result && (
-                 <div id="resultArea" className="mt-8 border border-gray-300 rounded-lg bg-white shadow-inner overflow-hidden">
+                 <div id="resultArea" ref={resultRef} className="mt-8 border border-gray-300 rounded-lg bg-white shadow-inner overflow-hidden">
                     <div className="p-6" dangerouslySetInnerHTML={{ __html: result.html }} />
                     {result.citations.length > 0 && (
                         <div className="p-4 bg-pme-light border-t border-gray-200">

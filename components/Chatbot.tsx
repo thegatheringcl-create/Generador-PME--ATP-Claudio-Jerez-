@@ -34,26 +34,29 @@ export default function Chatbot({ onClose }: ChatbotProps) {
         try {
             const apiKey = process.env.GEMINI_API_KEY;
                            
-            if (!apiKey) {
-                throw new Error("GEMINI_API_KEY no está configurada.");
+            if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
+                throw new Error("GEMINI_API_KEY no está configurada en los ajustes del proyecto.");
             }
-            const ai = new GoogleGenAI({ apiKey });
-            const chat = ai.chats.create({
+            const genAI = new GoogleGenAI({ apiKey });
+            const chat = genAI.chats.create({
                 model: 'gemini-3-flash-preview',
                 config: {
-                    systemInstruction: 'Eres un asistente experto en educación y en el sistema PME de Chile. Responde las preguntas de los usuarios de forma concisa y útil.',
+                    systemInstruction: 'Eres un asistente experto en educación y en el sistema PME de Chile. Responde las preguntas de los usuarios de forma concisa y útil.'
                 },
-                history: history, // Use current history to maintain context
+                history: history.map(h => ({
+                    role: h.role,
+                    parts: h.parts
+                })),
             });
 
-            const stream = await chat.sendMessageStream({ message: userInput });
+            const result = await chat.sendMessageStream({ message: userInput });
             
             let modelResponse = '';
             setHistory(prev => [...prev, { role: 'model', parts: [{ text: '' }] }]);
 
-            for await (const chunk of stream) {
-                const c = chunk as GenerateContentResponse;
-                modelResponse += c.text;
+            for await (const chunk of result) {
+                const text = chunk.text || '';
+                modelResponse += text;
                 setHistory(prev => {
                     const newHistory = [...prev];
                     newHistory[newHistory.length - 1] = { role: 'model', parts: [{ text: modelResponse }] };

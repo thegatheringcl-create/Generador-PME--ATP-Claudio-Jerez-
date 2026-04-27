@@ -76,7 +76,7 @@ export default function Tutorial() {
             {/* Floating Button - Moved to bottom-left to avoid chatbot overlap */}
             <button
                 onClick={() => setIsOpen(true)}
-                className="fixed bottom-6 left-6 z-40 bg-pme-accent text-white rounded-full p-4 shadow-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-pme-accent focus:ring-offset-2 transition-transform duration-300 hover:scale-110 flex items-center gap-2"
+                className="fixed bottom-6 left-6 z-40 bg-pme-accent text-white rounded-full p-4 shadow-lg hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-pme-accent focus:ring-offset-2 flex items-center gap-2"
                 aria-label="Ver tutorial"
             >
                 <HelpCircle size={24} />
@@ -87,16 +87,13 @@ export default function Tutorial() {
                 {isOpen && (
                     <div className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center p-4">
                         <motion.div
-                            drag
-                            dragMomentum={false}
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative pointer-events-auto border border-gray-200 cursor-default"
-                            style={{ touchAction: 'none' }}
+                            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative pointer-events-auto border border-gray-200"
                         >
                             {/* Header - Drag Handle */}
-                            <div className="bg-pme-primary p-4 text-white flex justify-between items-center cursor-move select-none">
+                            <div className="bg-pme-primary p-4 text-white flex justify-between items-center select-none">
                                 <div className="flex items-center gap-3">
                                     <div className="bg-white/20 p-2 rounded-lg">
                                         <span className="material-symbols-outlined">{steps[currentStep].icon}</span>

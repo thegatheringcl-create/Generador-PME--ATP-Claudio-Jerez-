@@ -23,14 +23,12 @@ export default function EvaluadorLector() {
 
         try {
             const apiKey = process.env.GEMINI_API_KEY;
-            if (!apiKey) throw new Error("API Key no configurada.");
+            if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
+                throw new Error("Clave de API no configurada en los ajustes del proyecto.");
+            }
 
             const genAI = new GoogleGenAI({ apiKey });
-            const model = genAI.models.generateContent({
-                model: "gemini-3-flash-preview",
-                contents: [{
-                    parts: [{
-                        text: `
+            const prompt = `
                             Actúa como un experto en evaluación de la comprensión lectora en Chile.
                             Analiza el siguiente texto y proporciona una evaluación detallada que incluya:
                             1. Nivel de complejidad (adecuado para qué curso).
@@ -40,9 +38,11 @@ export default function EvaluadorLector() {
 
                             TEXTO A EVALUAR:
                             "${textToEvaluate}"
-                        `
-                    }]
-                }],
+                        `;
+
+            const result = await genAI.models.generateContent({
+                model: "gemini-3-flash-preview",
+                contents: [{ parts: [{ text: prompt }] }],
                 config: {
                     safetySettings: [
                         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -53,8 +53,7 @@ export default function EvaluadorLector() {
                 }
             });
 
-            const response = await model;
-            setEvaluation(response.text || 'No se pudo generar la evaluación.');
+            setEvaluation(result.text || 'No se pudo generar la evaluación.');
         } catch (error) {
             console.error("Error en Evaluador Lector:", error);
             setMessage({ type: 'error', text: 'Error al evaluar el texto. Por favor, intenta de nuevo.' });

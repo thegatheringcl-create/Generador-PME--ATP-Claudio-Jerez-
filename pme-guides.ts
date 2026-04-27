@@ -23,8 +23,27 @@ export const guiaPME = {
 };
 
 export const guiaDefiniciones = {
+  ejesPrioritarios2026: [
+    "Fortalecimiento de los aprendizajes",
+    "Convivencia educativa y salud mental",
+    "Asistencia y revinculación escolar"
+  ],
+  logicaPME: {
+    objetivo: "El DESTINO. Expresa la aspiración de largo alcance (4 años). No habla de 'cómo'.",
+    meta: "La MEDIDA del destino. Acota, cuantifica y temporaliza el objetivo.",
+    estrategia: "El CAMINO estructurado (Anual). Patrón de decisiones y prácticas sostenidas. Debe incluir: 1. ¿Por qué? (Brecha), 2. Cambio estructural (Sistema/Modelo), 3. Relación con indicadores.",
+    acciones: "Los PASOS concretos. Hacen viable la estrategia.",
+    indicadores: "El SISTEMA DE CONTROL. Miden ejecución (seguimiento) y efectividad (impacto)."
+  },
   objetivoEstrategico: "Definición de Objetivo Estratégico (OE): Grandes propósitos a 4 años, específicos y que guían la mejora institucional. Deben ser SMART (Específicos, Medibles, Alcanzables, Relevantes, con Plazo) y responder a problemáticas detectadas en el diagnóstico. La estructura debe ser: Verbo en infinitivo + complemento y sujeto + finalidad u objetivo + contextualización. Responde a la pregunta: ¿Qué gran cambio queremos lograr en 4 años?",
-  estrategia: "Definición de Estrategia: Las líneas de acción o enfoques generales para alcanzar el Objetivo y las Metas, definidas por un período (generalmente anual). Responde a la pregunta: ¿Cómo vamos a lograr el objetivo y sus metas? Deben ser acciones concretas, viables y coherentes, formuladas a partir de sustantivos (Ej: 'Implementación', 'Diseño', 'Pilotaje')."
+  tiposIndicadores: {
+    insumo: "Cuantifica recursos asignados (Presupuesto, horas, materiales). Línea de base.",
+    proceso: "Mide el nivel de avance/despliegue del cronograma. El 'hacer'.",
+    producto: "Resultado tangible e inmediato (Entregables: informes, certificados).",
+    resultado: "Cambios intermedios en comportamiento o prácticas pedagógicas. Primer indicio de mejora.",
+    impacto: "Efectos a largo plazo. Cambio real en aprendizaje o gestión escolar (Efectividad real)."
+  },
+  estrategia: "Definición de Estrategia: Las líneas de acción o enfoques generales para alcanzar el Objetivo y las Metas, definidas por un período (generalmente anual). Responde a la pregunta: ¿Cómo vamos a lograr el objetivo y sus metas? Deben ser acciones concretas, viables y coherentes, formuladas a partir de sustantivos (Ej: 'Implementación', 'Diseño', 'Pilotaje'). NO es una actividad o evento puntual."
 };
 
 export const ejemplosObjetivos = {
@@ -200,6 +219,44 @@ export const modeloEscuelaTotal = {
         "Protocolos de crisis: Planes de acción inmediatos para situaciones de violencia extrema o ideación suicida, garantizando la seguridad de todos."
       ]
     }
+  ]
+};
+
+export const codigosRecursosPME = {
+  "Sueldos y Personal": [
+    { codigo: "410 101", nombre: "SUELDO BASE" },
+    { codigo: "410 119", nombre: "COLACIÓN Y MOVILIZACIÓN" },
+    { codigo: "410 124", nombre: "BONO INCENTIVO AL DESEMPEÑO LEY N° 20.248" },
+    { codigo: "410 302", nombre: "VIÁTICOS" },
+    { codigo: "410 304", nombre: "OTROS GASTOS EN PERSONAL" }
+  ],
+  "Asistencia Técnica y Formación": [
+    { codigo: "410 501", nombre: "ASISTENCIA TÉCNICO PEDAGÓGICA EDUCATIVA (ATE)" },
+    { codigo: "410 502", nombre: "ACCIONES FORMATIVAS Y PERFECCIONAMIENTO DE RR.HH." },
+    { codigo: "410 503", nombre: "ACTIVIDADES PARA EL FORTALECIMIENTO DE LOS OBJETIVOS DE MEJORAMIENTO" }
+  ],
+  "Recursos de Aprendizaje": [
+    { codigo: "410 601", nombre: "IMPLEMENTOS DE LABORATORIO" },
+    { codigo: "410 602", nombre: "IMPLEMENTOS DEPORTIVOS" },
+    { codigo: "410 603", nombre: "INSTRUMENTOS MUSICALES Y ARTÍSTICOS" },
+    { codigo: "410 604", nombre: "RECURSOS AUDIOVISUALES Y SOFTWARE EDUCATIVO" },
+    { codigo: "410 605", nombre: "MATERIAL Y RECURSOS DIDÁCTICOS" },
+    { codigo: "410 606", nombre: "BIBLIOTECAS, LIBROS Y REVISTAS" },
+    { codigo: "410 607", nombre: "EVENTOS EDUCATIVOS Y CULTURALES" },
+    { codigo: "410 608", nombre: "EVALUACIÓN DIAGNÓSTICA" }
+  ],
+  "Equipos e Infraestructura": [
+    { codigo: "410 701", nombre: "EQUIPOS DE FOTOGRAFÍA Y FILMACIÓN" },
+    { codigo: "410 702", nombre: "PIZARRAS INTERACTIVAS" },
+    { codigo: "410 703", nombre: "EQUIPOS INFORMÁTICOS Y LICENCIAS" },
+    { codigo: "411 601", nombre: "MANTENIMIENTO Y REPARACIÓN DE INFRAESTRUCTURA" }
+  ],
+  "Apoyo al Estudiante": [
+    { codigo: "410 803", nombre: "TALLERES EXTRAPROGRAMÁTICOS" },
+    { codigo: "410 804", nombre: "CONTRATACIÓN DE APOYO DE ESPECIALISTAS" },
+    { codigo: "410 805", nombre: "APOYO AL ESTUDIANTE" },
+    { codigo: "410 806", nombre: "ÚTILES ESCOLARES" },
+    { codigo: "410 901", nombre: "TRANSPORTE ESCOLAR" }
   ]
 };
 

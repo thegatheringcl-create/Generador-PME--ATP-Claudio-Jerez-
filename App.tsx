@@ -2,19 +2,22 @@
 import React, { useState, useEffect } from 'react';
 import PmeGenerator from './components/PmeGenerator';
 import ObjectiveGoalGenerator from './components/ObjectiveGoalGenerator';
+import RevisorPme from './components/RevisorPme';
 import EvaluadorLector from './components/EvaluadorLector';
 import EvaluadorEid from './components/EvaluadorEid';
 import DocentePlanner from './components/DocentePlanner';
 import Chatbot from './components/Chatbot';
 import Tutorial from './components/Tutorial';
 import Login from './components/Login';
+import FirebaseSettings from './components/FirebaseSettings';
 import { loginAnonymously } from './firebase';
 
-type Tab = 'pme' | 'goals' | 'lector' | 'eid' | 'docente';
+type Tab = 'pme' | 'goals' | 'revisor' | 'lector' | 'eid' | 'docente';
 
 export default function App() {
     const [activeTab, setActiveTab] = useState<Tab>('pme');
     const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+    const [isFirebaseSettingsOpen, setIsFirebaseSettingsOpen] = useState<boolean>(false);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
     const [userEstablishment, setUserEstablishment] = useState<string>('');
     const [authError, setAuthError] = useState<string | null>(null);
@@ -93,18 +96,29 @@ export default function App() {
                         <h2 className="text-white font-bold text-sm truncate max-w-[150px] sm:max-w-md">{userEstablishment}</h2>
                     </div>
                 </div>
-                <button 
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/20"
-                >
-                    <span className="material-symbols-outlined text-sm">logout</span>
-                    Salir
-                </button>
+                <div className="flex items-center gap-2">
+                    <button 
+                        onClick={() => setIsFirebaseSettingsOpen(true)}
+                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/20"
+                        title="Configuración de Firebase"
+                    >
+                        <span className="material-symbols-outlined text-sm">settings_suggest</span>
+                        <span className="hidden sm:inline">Configurar</span>
+                    </button>
+                    <button 
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-white/20"
+                    >
+                        <span className="material-symbols-outlined text-sm">logout</span>
+                        Salir
+                    </button>
+                </div>
             </div>
 
             <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar bg-gray-50 rounded-t-lg">
                 <TabButton tabId="pme" currentTab={activeTab} setTab={setActiveTab} icon="description">Planificador PME</TabButton>
                 <TabButton tabId="goals" currentTab={activeTab} setTab={setActiveTab} icon="target">Objetivos y Metas</TabButton>
+                <TabButton tabId="revisor" currentTab={activeTab} setTab={setActiveTab} icon="fact_check">Revisor de Calidad</TabButton>
                 <TabButton tabId="lector" currentTab={activeTab} setTab={setActiveTab} icon="menu_book">Evaluador Lector</TabButton>
                 <TabButton tabId="eid" currentTab={activeTab} setTab={setActiveTab} icon="analytics">Evaluador EID</TabButton>
                 <TabButton tabId="docente" currentTab={activeTab} setTab={setActiveTab} icon="person_search">Planificador Docente</TabButton>
@@ -113,6 +127,7 @@ export default function App() {
             <div className="bg-white rounded-b-xl shadow-2xl overflow-hidden min-h-[600px]">
                 {activeTab === 'pme' && <PmeGenerator />}
                 {activeTab === 'goals' && <ObjectiveGoalGenerator />}
+                {activeTab === 'revisor' && <RevisorPme />}
                 {activeTab === 'lector' && <EvaluadorLector />}
                 {activeTab === 'eid' && <EvaluadorEid />}
                 {activeTab === 'docente' && <DocentePlanner />}
@@ -122,7 +137,7 @@ export default function App() {
             <div className="fixed bottom-6 right-6 z-50">
                 <button
                     onClick={() => setIsChatOpen(!isChatOpen)}
-                    className="bg-pme-secondary text-white rounded-full p-4 shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-pme-secondary focus:ring-offset-2 transition-transform duration-300 hover:scale-110"
+                    className="bg-pme-secondary text-white rounded-full p-4 shadow-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-pme-secondary focus:ring-offset-2"
                     aria-label="Abrir chat de ayuda"
                 >
                     <span className="material-symbols-outlined">smart_toy</span>
@@ -130,6 +145,7 @@ export default function App() {
             </div>
 
             {isChatOpen && <Chatbot onClose={() => setIsChatOpen(false)} />}
+            {isFirebaseSettingsOpen && <FirebaseSettings onClose={() => setIsFirebaseSettingsOpen(false)} />}
             <Tutorial />
 
             {/* Footer informativo */}

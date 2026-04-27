@@ -35,14 +35,12 @@ export default function EvaluadorEid() {
 
         try {
             const apiKey = process.env.GEMINI_API_KEY;
-            if (!apiKey) throw new Error("API Key no configurada.");
+            if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
+                throw new Error("Clave de API no configurada en los ajustes del proyecto.");
+            }
 
             const genAI = new GoogleGenAI({ apiKey });
-            const model = genAI.models.generateContent({
-                model: "gemini-3-flash-preview",
-                contents: [{
-                    parts: [{
-                        text: `
+            const prompt = `
                             Actúa como un experto en Estándares Indicativos de Desempeño (EID) de la Agencia de Calidad de la Educación en Chile.
                             Analiza los siguientes estándares seleccionados para la subdimensión "${subdimension}" de la dimensión "${dimension}":
                             
@@ -56,9 +54,11 @@ export default function EvaluadorEid() {
                             4. Vinculación con el Plan de Mejoramiento Educativo (PME) 2026.
 
                             FORMATO DE SALIDA: Markdown profesional.
-                        `
-                    }]
-                }],
+                        `;
+
+            const result = await genAI.models.generateContent({
+                model: "gemini-3-flash-preview",
+                contents: [{ parts: [{ text: prompt }] }],
                 config: {
                     safetySettings: [
                         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -69,8 +69,7 @@ export default function EvaluadorEid() {
                 }
             });
 
-            const response = await model;
-            setEvaluation(response.text || 'No se pudo generar el análisis.');
+            setEvaluation(result.text || 'No se pudo generar el análisis.');
         } catch (error) {
             console.error("Error en Evaluador EID:", error);
             setMessage({ type: 'error', text: 'Error al analizar los estándares. Por favor, intenta de nuevo.' });

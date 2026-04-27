@@ -1,6 +1,6 @@
 
 import { GoogleGenAI, GenerateContentResponse, HarmCategory, HarmBlockThreshold } from "@google/genai";
-import { guiaPME, guiaDefiniciones, ejemplosObjetivos, ejemplosEstrategias, estandaresPME, ejemplosRazonamientoIndicadores, modeloEscuelaTotal } from '../pme-guides';
+import { guiaPME, guiaDefiniciones, ejemplosObjetivos, ejemplosEstrategias, estandaresPME, ejemplosRazonamientoIndicadores, modeloEscuelaTotal, codigosRecursosPME } from '../pme-guides';
 import { Plan } from '../constants';
 
 interface PmeActionParams {
@@ -42,22 +42,47 @@ interface MetaEstrategicaParams {
 
 // Helper to get a fresh instance of GoogleGenAI with the latest API key
 const getAiInstance = () => {
-    // In Vite, we check both process.env (injected via define) and import.meta.env
-    const apiKey = process.env.GEMINI_API_KEY || 
-                   (import.meta.env && import.meta.env.VITE_GEMINI_API_KEY) ||
-                   process.env.API_KEY;
+    // In this environment, process.env.GEMINI_API_KEY is the standard way to access the key
+    const apiKey = process.env.GEMINI_API_KEY;
     
-    if (!apiKey) {
-        console.error("ERROR CRÍTICO: No se encontró la clave de API de Gemini.");
-        throw new Error("Error de configuración: Por favor, asegúrate de que la clave de API de Gemini esté configurada en los ajustes del proyecto (Settings).");
+    // Explicitly check for common "missing key" string representations
+    if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
+        console.error("ERROR CRÍTICO: No se encontró la clave de API de Gemini. apiKey value:", apiKey);
+        throw new Error("Clave de API no configurada. Por favor, asegúrate de que la clave de API de Gemini esté configurada en los ajustes del proyecto (Settings).");
     }
     
+    // Documentation suggests { apiKey } for browser environments
     return new GoogleGenAI({ apiKey });
 };
 
-const formatGeminiError = (error: Error | null): string => {
+/**
+ * Helper to call Gemini using the proper SDK v1 structure
+ */
+const callAi = async (modelName: string, promptText: string, customConfig: any = {}, parts: any[] | null = null) => {
+    const ai = getAiInstance();
+    
+    const contents = parts ? [{ parts }] : [{ parts: [{ text: promptText }] }];
+    
+    const response = await ai.models.generateContent({
+        model: modelName,
+        contents,
+        config: {
+            safetySettings: [
+                { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
+                { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH }
+            ],
+            ...customConfig
+        }
+    });
+    
+    return response;
+};
+
+const formatGeminiError = (error: any): string => {
     if (!error) return 'Todos los modelos fallaron';
-    const msg = error.message || '';
+    const msg = error.message || String(error);
     if (msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('RESOURCE_EXHAUSTED')) {
         return 'Has alcanzado el límite de consultas gratuitas de la IA por minuto. Por favor, espera unos 30 segundos y vuelve a intentarlo.';
     }
@@ -70,16 +95,15 @@ const formatGeminiError = (error: Error | null): string => {
     return msg;
 };
 
-// Using robust models for complex educational context generation.
+// Using stable model aliases for reliable performance
 const complexModelsToTry = [
     'gemini-3.1-pro-preview',
     'gemini-3-flash-preview',
 ];
 
-// Using fast models for suggestions.
+// Using fast models for suggestions
 const fastModelsToTry = [
     'gemini-3-flash-preview',
-    'gemini-3.1-flash-lite-preview',
 ];
 
 
@@ -112,11 +136,10 @@ export const generateEstrategia = async (params: EstrategiaParams): Promise<stri
         4.  **Ejemplo de referencia para esta subdimensión:** "${ejemploSubdimension}"
 
         CRITERIOS DE VALIDACIÓN TÉCNICA (La estrategia debe cumplir con esto):
-        - Debe explicarse en términos de sistema.
-        - Debe generar un cambio estructural.
-        - Debe tener un horizonte anual.
-        - Debe ser medible indirectamente mediante indicadores.
-        - Debe responder directamente a los estándares priorizados mencionados arriba.
+        - Coherencia: Debe estar alineada con el objetivo estratégico y los planes por normativa (SEP/PIE). No debe ser una generalidad.
+        - Proporcionalidad: Debe ser una acción o línea de acción que se pueda distribuir de manera equilibrada en el ciclo de mejora, no debe intentar resolver todo a la vez.
+        - Factibilidad: Debe ser posible de implementar durante un periodo anual (o menos) con los recursos disponibles. No debe ser una tarea administrativa general.
+        - Debe ser un medio para alcanzar el fin (el objetivo), enfocada en un proceso y no solo en un evento.
 
         Ahora, basándote en esas guías y en el siguiente contexto, redacta la estrategia:
 
@@ -142,19 +165,7 @@ export const generateEstrategia = async (params: EstrategiaParams): Promise<stri
     
      for (const modelName of fastModelsToTry) {
         try {
-            const response = await ai.models.generateContent({
-                model: modelName,
-                contents: [{ parts: [{ text: promptText }] }],
-                config: {
-                    safetySettings: [
-                        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-                        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-                        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-                        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH }
-                    ]
-                }
-            });
-
+            const response = await callAi(modelName, promptText);
             const text = response.text;
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
             throw new Error('La IA devolvió una estrategia vacía.');
@@ -176,17 +187,17 @@ export const generateMetaEstrategica = async (params: MetaEstrategicaParams): Pr
         
         IMPORTANTE: Las metas deben proyectarse para el año 2026 o posterior. Bajo ninguna circunstancia generes metas para años anteriores (como 2024 o 2025).
         
-        DEFINICIÓN DE META ESTRATÉGICA:
-        Es la expresión cuantitativa o cualitativa de lo que se pretende lograr en un periodo determinado (generalmente 4 años o anual). Debe ser SMART: Específica, Medible, Alcanzable, Relevante y con un Tiempo determinado.
-        
-        CONTEXTO:
-        - Dimensión: ${dimension}
-        - Subdimensión: ${subdimension}
-        - Objetivo Estratégico: "${objEstrategico}"
+        DEFINICIÓN DE META ESTRATÉGICA (Criterios MARTE):
+        Para que la meta sea válida, DEBE cumplir con los criterios MARTE:
+        - M (Medible): Tiene un indicador cuantificable (ej: % de logro, N° de...).
+        - A (Alcanzable): Es posible de cumplir en 4 años con las capacidades actuales.
+        - R (Retador): No es una meta trivial, busca una mejora real de los aprendizajes.
+        - T (Temporal): Define un plazo claro (final del ciclo 4 años o monitoreo anual).
+        - E (Específico): Es clara, directa y fácil de imaginar sin ambigüedades.
         
         INSTRUCCIONES:
-        - Redacta una meta SMART que sea coherente con el objetivo estratégico proporcionado.
-        - Debe ser una sola oración o un párrafo muy breve.
+        - Redacta una meta MARTE coherente con el objetivo estratégico proporcionado.
+        - Debe redactarse usando la fórmula: [Indicador Cuantitativo] + [Acción realizada] + [Práctica/Procedimiento] + [Contexto de logro] + [Temporalidad].
         - No incluyas títulos ni introducciones. Solo el texto de la meta.
         
         Redacta la meta estratégica:
@@ -195,10 +206,7 @@ export const generateMetaEstrategica = async (params: MetaEstrategicaParams): Pr
     let lastError: Error | null = null;
     for (const modelName of fastModelsToTry) {
         try {
-            const response = await ai.models.generateContent({
-                model: modelName,
-                contents: [{ parts: [{ text: promptText }] }],
-            });
+            const response = await callAi(modelName, promptText);
             const text = response.text;
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
         } catch (error) {
@@ -248,19 +256,7 @@ export const generateStrategicObjectiveSuggestion = async (params: StrategicObje
     
     for (const modelName of fastModelsToTry) {
         try {
-            const response = await ai.models.generateContent({
-                model: modelName,
-                contents: [{ parts: [{ text: promptText }] }],
-                config: {
-                    safetySettings: [
-                        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-                        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-                        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-                        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH }
-                    ]
-                }
-            });
-
+            const response = await callAi(modelName, promptText);
             const text = response.text;
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
             throw new Error('La IA devolvió una sugerencia vacía.');
@@ -367,25 +363,15 @@ export const generatePmeActions = async (params: PmeActionParams): Promise<{ tex
     
     let lastError: Error | null = null;
     const modelForActions = complexModelsToTry[0];
-    const config = {
-        tools: useGoogleSearch ? [{googleSearch: {}}] : [],
-        safetySettings: [
-            { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-            { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-            { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
-            { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH }
-        ]
-    };
 
     try {
-        const response: GenerateContentResponse = await ai.models.generateContent({
-            model: modelForActions,
-            contents: [{ parts: [{ text: promptText }] }],
-            config: config
+        const response = await callAi(modelForActions, promptText, {
+            tools: useGoogleSearch ? [{ googleSearch: {} }] : []
         });
 
         const text = response.text;
         if (text) {
+            // Updated property access for @google/genai v1
             const citations = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
             return { text, citations };
         }
@@ -465,10 +451,7 @@ export const generateSmartObjective = async (params: {
     let lastError: Error | null = null;
     for (const modelName of fastModelsToTry) {
         try {
-            const response = await ai.models.generateContent({
-                model: modelName,
-                contents: [{ parts: [{ text: promptText }] }],
-            });
+            const response = await callAi(modelName, promptText);
             const text = response.text;
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
         } catch (error) {
@@ -515,10 +498,7 @@ export const generateObjectiveFromIdeas = async (params: {
     let lastError: Error | null = null;
     for (const modelName of fastModelsToTry) {
         try {
-            const response = await ai.models.generateContent({
-                model: modelName,
-                contents: [{ parts: [{ text: promptText }] }],
-            });
+            const response = await callAi(modelName, promptText);
             const text = response.text;
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
         } catch (error) {
@@ -574,10 +554,7 @@ export const combineObjectives = async (params: {
     let lastError: Error | null = null;
     for (const modelName of fastModelsToTry) {
         try {
-            const response = await ai.models.generateContent({
-                model: modelName,
-                contents: [{ parts: [{ text: promptText }] }],
-            });
+            const response = await callAi(modelName, promptText);
             const text = response.text;
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
         } catch (error) {
@@ -635,10 +612,7 @@ export const generateSmartGoal = async (params: {
     let lastError: Error | null = null;
     for (const modelName of fastModelsToTry) {
         try {
-            const response = await ai.models.generateContent({
-                model: modelName,
-                contents: [{ parts: [{ text: promptText }] }],
-            });
+            const response = await callAi(modelName, promptText);
             const text = response.text;
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
         } catch (error) {
@@ -707,10 +681,7 @@ export const generateSmartActionsAndIndicators = async (params: {
     let lastError: Error | null = null;
     for (const modelName of complexModelsToTry) {
         try {
-            const response = await ai.models.generateContent({
-                model: modelName,
-                contents: [{ parts: [{ text: promptText }] }],
-            });
+            const response = await callAi(modelName, promptText);
             const text = response.text;
             if (text) return text.trim();
         } catch (error) {
@@ -726,10 +697,7 @@ export const generateAnnualPlan = async (params: {
     subject: string;
     objectives: string[];
 }) => {
-    const ai = getAiInstance();
-    const model = ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `Eres un experto en diseño curricular, neurociencias aplicadas a la educación y Diseño Universal para el Aprendizaje (DUA).
+    const promptText = `Eres un experto en diseño curricular, neurociencias aplicadas a la educación y Diseño Universal para el Aprendizaje (DUA).
         
         Tu tarea es crear un PLAN ANUAL DE ESTUDIOS para el nivel "${params.level}" en la asignatura "${params.subject}".
         
@@ -758,13 +726,12 @@ export const generateAnnualPlan = async (params: {
         1. Distribuye los OA de forma lógica entre MARZO y NOVIEMBRE.
         2. Crea indicadores de evaluación precisos y observables para cada OA.
         3. El nombre de la unidad debe ser motivador y relacionado con los OA.
-        4. Aplica principios de neurociencia (atención, memoria, emoción) y DUA (múltiples formas de representación, acción y expresión, y compromiso).`,
-        config: {
-            responseMimeType: 'application/json'
-        }
+        4. Aplica principios de neurociencia (atención, memoria, emoción) y DUA (múltiples formas de representación, acción y expresión, y compromiso).`;
+
+    const response = await callAi('gemini-3-flash-preview', promptText, {
+        responseMimeType: 'application/json'
     });
 
-    const response = await model;
     return JSON.parse(response.text || '{}');
 };
 
@@ -775,10 +742,7 @@ export const generateUnitPlan = async (params: {
     objectives: any[];
     numClasses: number;
 }) => {
-    const ai = getAiInstance();
-    const model = ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: `Eres un experto en planificación pedagógica, neurociencias y DUA.
+    const promptText = `Eres un experto en planificación pedagógica, neurociencias y DUA.
         
         Crea un PLAN DE UNIDAD DIARIO para la unidad "${params.unitName}" del nivel "${params.level}" en "${params.subject}".
         La unidad tiene ${params.numClasses} clases.
@@ -809,12 +773,354 @@ export const generateUnitPlan = async (params: {
         2. La situación de aprendizaje debe ser estructurada (Inicio, Desarrollo, Cierre).
         3. Incluye preguntas de activación de conocimientos previos para el inicio.
         4. Incluye preguntas de metacognición para el cierre.
-        5. Aplica DUA y Neurociencias en cada actividad.`,
-        config: {
-            responseMimeType: 'application/json'
-        }
+        5. Aplica DUA y Neurociencias en cada actividad.`;
+
+    const response = await callAi('gemini-3-flash-preview', promptText, {
+        responseMimeType: 'application/json'
     });
 
-    const response = await model;
     return JSON.parse(response.text || '{}');
+};
+
+/**
+ * Realiza una revisión técnica de coherencia, pertinencia y calidad de un PME.
+ * Proporciona feedback basado en los estándares del MINEDUC.
+ * Puede recibir texto plano o datos de archivo (base64).
+ */
+export const evaluatePmeCoherence = async (params: {
+    planData?: string;
+    fileData?: { mimeType: string, data: string };
+}): Promise<string> => {
+    const { planData, fileData } = params;
+    const ai = getAiInstance();
+
+    // Contexto enriquecido con las guías del sistema
+    const systemContext = `
+        Utiliza el siguiente marco normativo y técnico para tu evaluación:
+        - Estándares Indicativos de Desempeño: ${JSON.stringify(estandaresPME)}
+        - Definiciones Técnicas (OE y Estrategia): ${JSON.stringify(guiaDefiniciones)}
+        - Enfoque por Dimensiones: ${JSON.stringify(guiaPME)}
+    `;
+
+    const promptText = `
+        Actúa como un experto Auditor y Asesor Técnico Pedagógico del Ministerio de Educación de Chile. 
+        Tu tarea es realizar una REVISIÓN TÉCNICA DE COHERENCIA Y CALIDAD de un Plan de Mejoramiento Educativo (PME).
+
+        MARCO TÉCNICO DE REFERENCIA:
+        ${systemContext}
+
+        CONSIDERA LOS SIGUIENTES CRITERIOS DE EVALUACIÓN:
+        1. **Coherencia Horizontal:** ¿El Objetivo Estratégico responde a las necesidades de la Dimensión/Subdimensión? ¿La Estrategia es un puente efectivo entre el Objetivo y las Acciones?
+        2. **Pertinencia:** ¿Las acciones son adecuadas para alcanzar las metas propuestas?
+        3. **Calidad de Acciones:** ¿Las acciones son concretas, tienen responsables claros, plazos realistas y medios de verificación que permitan evidenciar el logro?
+        4. **Articulación Normativa:** ¿Se integran correctamente los planes obligatorios (SEP, PIE, Convivencia, etc.)?
+        5. **Indicadores:** ¿Los indicadores de Proceso, Resultado e Impacto son SMART y permiten medir efectivamente el progreso?
+
+        ${planData ? `DATA DEL PLAN A REVISAR:\n${planData}` : 'Analiza el documento o imagen adjunta que contiene el reporte de planificación.'}
+
+        INSTRUCCIONES DE SALIDA:
+        Genera un informe estructurado en Markdown con las siguientes secciones:
+        
+        # Informe de Revisión Técnica PME 2026
+        
+        ## 1. Análisis de Coherencia Estratégica
+        [Evalúa si el objetivo, meta y estrategia están alineados con los Estándares Indicativos de Desempeño. Usa un semáforo virtual: 🔴 Crítico, 🟡 En proceso, 🟢 Óptimo]
+
+        ## 2. Evaluación de Acciones e Indicadores
+        [Analiza si las acciones son suficientes y si los indicadores miden lo que se pretende de acuerdo a la lógica de Proceso/Resultado/Impacto.]
+
+        ## 3. Fortalezas del Plan
+        [Menciona al menos 3 puntos positivos alineados a las buenas prácticas del PME.]
+
+        ## 4. Debilidades y Nudos Críticos
+        [Identifica posibles fallos, falta de claridad o incumplimiento de definiciones técnicas.]
+
+        ## 5. Recomendaciones de Mejora (Feedback accionable)
+        [Entrega sugerencias concretas para refinar el plan y asegurar que cumpla con los estándares del MINEDUC.]
+
+        Usa un lenguaje técnico-pedagógico constructivo, profesional y preciso.
+    `;
+
+    const parts: any[] = [{ text: promptText }];
+    if (fileData) {
+        parts.push({
+            inlineData: {
+                mimeType: fileData.mimeType,
+                data: fileData.data
+            }
+        });
+    }
+
+    let lastError: Error | null = null;
+    for (const modelName of complexModelsToTry) {
+        try {
+            const response = await callAi(modelName, promptText, {}, parts);
+            const text = response.text;
+            if (text) return text.trim();
+        } catch (error) {
+            console.error(`Error con el modelo ${modelName}:`, error);
+            lastError = error as Error;
+        }
+    }
+    throw new Error(`Error al realizar la revisión del PME: ${formatGeminiError(lastError)}`);
+};
+
+/**
+ * Helper to clean Markdown JSON blocks if present and parse.
+ */
+const parseCleanJson = (text: string) => {
+    try {
+        // Remove markdown code blocks and any leading/trailing noise
+        const cleaned = text.replace(/```json\n?|```/g, '').trim();
+        return JSON.parse(cleaned);
+    } catch (e) {
+        console.error("Error parsing JSON:", text);
+        // If it still fails, try to find a JSON object in the string
+        const match = text.match(/\{[\s\S]*\}/);
+        if (match) {
+            try {
+                return JSON.parse(match[0]);
+            } catch (e2) {
+                throw new Error("Respuesta de IA con formato inválido.");
+            }
+        }
+        throw e;
+    }
+};
+
+/**
+ * Realiza una revisión técnica de una ACCIÓN específica de un PME, comparándola con su contexto estratégico.
+ */
+export const evaluatePmeActionsCoherence = async (params: {
+    context: {
+        dimension: string;
+        subdimension: string;
+        oe: string;
+        meta: string;
+        strategy: string;
+    };
+    action: {
+        name: string;
+        description: string;
+        indicator: string;
+        resources: string;
+        responsibles?: string;
+        verificationMeans?: string;
+    };
+    existingActions?: string[];
+}): Promise<any> => {
+    const { context, action, existingActions = [] } = params;
+    const ai = getAiInstance();
+
+    const promptText = `
+        Actúa como un experto Auditor Técnico Pedagógico del Ministerio de Educación de Chile, especialista en Planificación Estratégica PME 2026.
+        Tu tarea es realizar una revisión técnica exhaustiva de una ACCIÓN y sus componentes, comparándolos con su contexto estratégico.
+
+        CONTEXTO ESTRATÉGICO:
+        - Dimensión: ${context.dimension}
+        - Subdimensión: ${context.subdimension}
+        - OE: "${context.oe}"
+        - Meta: "${context.meta}"
+        - Estrategia: "${context.strategy}"
+
+        COMPONENTES DE LA ACCIÓN A EVALUAR:
+        1. Nombre: "${action.name}"
+        2. Descripción: "${action.description}"
+        3. Recursos: "${action.resources}"
+        4. Medios de Verificación: "${action.verificationMeans || 'No especificado'}"
+        
+        ACCIONES YA EXISTENTES EN LA ESTRATEGIA (NO PROPONGAS ESTAS MISMAS):
+        ${existingActions.map(a => `- ${a}`).join('\n')}
+
+        INSTRUCCIONES DE EVALUACIÓN:
+        Para cada componente (excepto fechas), proporciona:
+        - Análisis y Retroalimentación: Identifica aspectos a mejorar, falta de coherencia o debilidades técnicas.
+        - Propuesta de Mejora: Indica cómo solucionar los problemas identificados, propón redacciones alternativas o da ejemplos concretos.
+        IMPORTANTE: Verifica si la acción es redundante respecto a las acciones ya existentes mencionadas arriba. Si lo es, retroalimenta sobre la redundancia y propón un enfoque distinto o complementario que aporte valor, en lugar de replicar lo que ya existe.
+
+        FORMATO DE SALIDA (ESTRICTAMENTE JSON):
+        {
+          "status": "Crítico" | "Mejorable" | "Óptimo",
+          "evaluation": {
+            "name": { "analysis": "...", "proposal": "..." },
+            "description": { "analysis": "...", "proposal": "..." },
+            "resources": { "analysis": "...", "proposal": "..." },
+            "verificationMeans": { "analysis": "...", "proposal": "..." }
+          }
+        }
+    `;
+
+    let lastError: Error | null = null;
+    for (const modelName of fastModelsToTry) {
+        try {
+            const response = await callAi(modelName, promptText, {
+                responseMimeType: "application/json"
+            });
+            const text = response.text;
+            return parseCleanJson(text || '{}');
+        } catch (error) {
+            console.error(`Error con el modelo ${modelName}:`, error);
+            lastError = error as Error;
+        }
+    }
+    throw new Error(`Error al revisar la acción: ${formatGeminiError(lastError)}`);
+};
+
+/**
+ * Realiza una revisión técnica de un INDICADOR de seguimiento estratégico.
+ */
+export const evaluatePmeIndicator = async (params: {
+    context: {
+        dimension: string;
+        subdimension: string;
+        oe: string;
+        meta: string;
+        strategy: string;
+    };
+    indicator: {
+        name: string;
+        description: string;
+    };
+}): Promise<any> => {
+    const { context, indicator } = params;
+    const ai = getAiInstance();
+
+    const promptText = `
+        Actúa como un experto Auditor Técnico Pedagógico especialista en PME 2026.
+        Tu tarea es revisar la calidad y pertinencia de un INDICADOR DE SEGUIMIENTO estratégico.
+
+        CONTEXTO:
+        - Meta Estratégica: "${context.meta}"
+        - Estrategia: "${context.strategy}"
+
+        INDICADOR A EVALUAR:
+        - Nombre: "${indicator.name}"
+        - Descripción: "${indicator.description}"
+
+        MARCO DE REFERENCIA PME:
+        El indicador puede ser:
+        - Insumo: Recurso o condición inicial.
+        - Resultado: Cambio en prácticas pedagógicas (gestión docente).
+        - Impacto: Cambio significativo en aprendizajes (estudiantes).
+        
+        INSTRUCCIONES:
+        Proporciona un análisis crítico y una propuesta de mejora siguiendo estrictamente el formato JSON.
+        - Análisis y Retroalimentación:
+          1. Evalúa si el indicador es coherente con la Meta y Estrategia.
+          2. IMPORTANTE: No penalices los indicadores de "Impacto" (resultados de estudiantes) si son adecuados para medir la meta. Los indicadores de impacto son válidos y necesarios.
+          3. Evalúa si es cuantificable y pertinente.
+        - Propuesta de Mejora: Sugerencia de redacción técnica (ej. "% de estudiantes...", "% de docentes...", "N° de talleres realizados").
+
+        FORMATO DE SALIDA (ESTRICTAMENTE JSON):
+        {
+          "analysis": "...",
+          "proposal": "..."
+        }
+    `;
+
+    let lastError: Error | null = null;
+    for (const modelName of fastModelsToTry) {
+        try {
+            const response = await callAi(modelName, promptText, {
+                responseMimeType: "application/json"
+            });
+            return parseCleanJson(response.text || '{}');
+        } catch (error) {
+            console.error(`Error con el modelo ${modelName}:`, error);
+            lastError = error as Error;
+        }
+    }
+    throw new Error(`Error al revisar el indicador: ${formatGeminiError(lastError)}`);
+};
+
+/**
+ * Extrae la estructura estratégica de un documento PME (PDF o Imagen) para pre-llenar el revisor.
+ */
+export const extractPmeStructure = async (fileData: { mimeType: string, data: string }) => {
+    const ai = getAiInstance();
+    const promptText = `
+        Analiza el documento o imagen adjunta que contiene un reporte de planificación PME (Chile 2026).
+        Tu tarea es EXTRAER la estructura estratégica para pre-llenar un formulario técnico.
+
+        TEN EN CUENTA LOS EJES PRIORITARIOS 2026:
+        - Fortalecimiento de los aprendizajes.
+        - Convivencia educativa y salud mental.
+        - Asistencia y revinculación escolar.
+
+        REFERENCIA DE CÓDIGOS DE RECURSOS:
+        ${JSON.stringify(codigosRecursosPME)}
+
+        BUSCA ELEMENTOS CLAVE:
+        - Dimensiones y Subdimensiones.
+        - Objetivos Estratégicos (OE) - El Destino.
+        - Metas Estratégicas - La Medida.
+        - Estrategias anuales - El Camino.
+        - Acciones - Los Pasos.
+        - Indicadores de Seguimiento Estratégico (CLUSTERED TABLE): En este reporte, los indicadores suelen aparecer todos juntos en una tabla inicial con columnas "Dimensión", "Estrategia", "Indicador" y "Descripción Indicador". Debes mapear cada indicador a su respectiva Estrategia y Dimensión.
+        - Recursos - Financiamiento (SEP, PIE, etc.).
+
+        NOTA SOBRE MODELO ESCUELA TOTAL:
+        Si el documento menciona niveles de acción (Promocional, Focalizado, Individual), agrúpalos dentro de la descripción o nombre de la acción correspondiente.
+
+        ESTRUCTURA DE DATOS REQUERIDA:
+        1. Identifica la tabla de INDICADORES agrupados por Estrategia/Dimensión.
+        2. Identifica las ACCIONES que pertenecen a cada Estrategia.
+        3. Genera un objeto consolidado para cada "Línea Estratégica" (Dimensión + Estrategia).
+
+        FORMATO DE SALIDA (ESTRICTAMENTE JSON):
+        {
+          "strategicLines": [
+            {
+              "dimension": "NOMBRE_DIMENSION (Ej: GESTIÓN PEDAGÓGICA)",
+              "subdimension": "Nombre Subdimensión",
+              "oe": "Texto del Objetivo Estratégico",
+              "meta": "Texto de la Meta Estratégica",
+              "strategy": "Texto de la Estrategia",
+              "generalIndicators": [
+                {
+                  "name": "Nombre de Indicador de Seguimiento de la Estrategia",
+                  "description": "Cómo se medirá"
+                }
+              ],
+              "actions": [
+                {
+                  "name": "Nombre Acción",
+                  "description": "Descripción Detallada",
+                  "resources": "Recursos",
+                  "verificationMeans": "Medios de Verificación"
+                }
+              ]
+            }
+          ]
+        }
+
+        Si no encuentras algún campo, es obligatorio usar un string vacío (""). No uses null ni undefined. No añadas notas o explicaciones fuera del JSON. Todo el texto debe ser parte de la estructura JSON. Es CRÍTICO que la respuesta sea un objeto JSON válido y completo.
+    `;
+
+    const parts: any[] = [
+        { text: promptText },
+        { inlineData: { mimeType: fileData.mimeType, data: fileData.data } }
+    ];
+
+    let lastError: Error | null = null;
+    for (const modelName of complexModelsToTry) {
+        try {
+            const response = await callAi(modelName, promptText, {
+                responseMimeType: "application/json",
+                temperature: 0.1
+            }, parts);
+
+            const text = response.text;
+            if (text) return parseCleanJson(text);
+        } catch (error: any) {
+            console.error(`Error al extraer estructura con ${modelName}:`, error);
+            // Handle common error formats
+            let errorMessage = error.message || 'Error desconocido';
+            if (error.status === 403 || errorMessage.includes('Forbidden')) {
+                errorMessage = "Acceso denegado (Forbidden). Es posible que la clave de API no tenga permisos para este modelo o el servicio esté restringido.";
+            }
+            lastError = new Error(errorMessage);
+        }
+    }
+    throw new Error(`Error de IA al extraer la estructura: ${lastError ? lastError.message : 'Error desconocido'}`);
 };

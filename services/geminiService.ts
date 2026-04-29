@@ -46,24 +46,24 @@ const getAiInstance = () => {
     const apiKey = process.env.GEMINI_API_KEY;
     
     // Explicitly check for common "missing key" string representations
-    if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
+    if (!apiKey || apiKey === 'undefined' || apiKey === 'null' || apiKey === '') {
         console.error("ERROR CRÍTICO: No se encontró la clave de API de Gemini. apiKey value:", apiKey);
-        throw new Error("Clave de API no configurada. Por favor, asegúrate de que la clave de API de Gemini esté configurada en los ajustes del proyecto (Settings).");
+        throw new Error("Clave de API no configurada. Si estás en AI Studio, ve a Settings y añade GEMINI_API_KEY. Si estás en Vercel, añádela como Variable de Entorno.");
     }
     
-    // Documentation suggests { apiKey } for browser environments
     return new GoogleGenAI({ apiKey });
 };
 
 /**
  * Helper to call Gemini using the proper SDK v1 structure
  */
-const callAi = async (modelName: string, promptText: string, customConfig: any = {}, parts: any[] | null = null) => {
+const callAi = async (modelName: string, promptText: string, options: { tools?: any[], toolConfig?: any, config?: any, parts?: any[] } = {}) => {
     const ai = getAiInstance();
+    const { tools, toolConfig, config, parts } = options;
     
     const contents = parts ? [{ parts }] : [{ parts: [{ text: promptText }] }];
     
-    const response = await ai.models.generateContent({
+    const request: any = {
         model: modelName,
         contents,
         config: {
@@ -73,11 +73,15 @@ const callAi = async (modelName: string, promptText: string, customConfig: any =
                 { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
                 { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH }
             ],
-            ...customConfig
+            ...config
         }
-    });
+    };
+
+    // Tools must be at the root level, not inside config
+    if (tools) request.tools = tools;
+    if (toolConfig) request.toolConfig = toolConfig;
     
-    return response;
+    return await ai.models.generateContent(request);
 };
 
 const formatGeminiError = (error: any): string => {
@@ -99,11 +103,13 @@ const formatGeminiError = (error: any): string => {
 const complexModelsToTry = [
     'gemini-3.1-pro-preview',
     'gemini-3-flash-preview',
+    'gemini-1.5-pro-latest' // Fallback to 1.5 if 3.x series is unavailable
 ];
 
 // Using fast models for suggestions
 const fastModelsToTry = [
     'gemini-3-flash-preview',
+    'gemini-1.5-flash-latest' // Fallback
 ];
 
 
@@ -170,8 +176,10 @@ export const generateEstrategia = async (params: EstrategiaParams): Promise<stri
             if (text) return text.trim().replace(/^"/, '').replace(/"$/, '');
             throw new Error('La IA devolvió una estrategia vacía.');
         } catch (error) {
-            console.error(`Error con el modelo ${modelName}:`, error);
+            console.warn(`Intento fallido con ${modelName}:`, error);
             lastError = error as Error;
+            // Si es un error de clave de API, no intentamos otros modelos
+            if (lastError.message.includes('API key')) break;
         }
     }
     
@@ -269,11 +277,9 @@ export const generateStrategicObjectiveSuggestion = async (params: StrategicObje
     throw lastError || new Error("Todos los modelos de IA fallaron al generar la sugerencia.");
 };
 
-
 export const generatePmeActions = async (params: PmeActionParams): Promise<{ text: string, citations: any[] | undefined }> => {
     const { cantidad, dimension, subdimension, objEstrategico, metaEstrategica, estrategia, planesData, useGoogleSearch, estandaresSeleccionados, nudosCriticos } = params;
-    const ai = getAiInstance();
-
+    
     const estandaresTexto = estandaresSeleccionados && estandaresSeleccionados.length > 0
         ? estandaresSeleccionados.join('; ')
         : ((estandaresPME as any)[dimension]?.[subdimension] || []).join('; ');
@@ -296,10 +302,12 @@ export const generatePmeActions = async (params: PmeActionParams): Promise<{ tex
 `).join('\n');
 
     const promptText = `
-        Actúa como un experto asesor educacional en Chile, especializado en PME para el año 2026.
-        Tu tarea es completar una ficha de Plan de Mejoramiento Educativo. Si se solicita, usa Google Search para obtener información actualizada y fundamentada.
+        Actúa como un experto asesor educacional en Chile, especializado en PME para el ciclo 2026-2029.
+        Tu tarea es completar una ficha de Plan de Mejoramiento Educativo (PME) con un enfoque técnico, profesional y alineado con la normativa vigente.
+        
+        ${useGoogleSearch ? 'IMPORTANTE: Tienes acceso a Google Search. ÚSALO proactivamente para fundamentar tus propuestas con evidencia actualizada sobre estrategias de mejora escolar, marcos para la buena enseñanza y estándares de desempeño del MINEDUC Chile.' : ''}
 
-        IMPORTANTE: Todas las fechas y metas deben ser para el año 2026 o posterior. No menciones años anteriores.
+        IMPORTANTE: Todas las fechas y metas deben ser proyectadas para el año 2026 o posterior.
 
         DATOS DE CONTEXTO PROPORCIONADOS:
         - Dimensión PME: ${dimension}
@@ -314,22 +322,19 @@ export const generatePmeActions = async (params: PmeActionParams): Promise<{ tex
         - Cantidad de Acciones a generar: ${cantidad}
 
         INSTRUCCIONES PARA LOS INDICADORES:
-        Utiliza el siguiente MODELO DE RAZONAMIENTO para formular los indicadores. Los indicadores de Proceso/Resultado miden ejecución y uso, mientras que los de Impacto miden el efecto real en el propósito estratégico (aprendizajes, clima, etc.).
-
-        MODELO DE RAZONAMIENTO Y EJEMPLOS:
+        Utiliza el siguiente MODELO DE RAZONAMIENTO para formular indicadores que permitan un monitoreo efectivo.
+        
+        MODELO DE REALIMENTACIÓN E INDICADORES:
         ${ejemplosRazonamientoIndicadores}
 
-        REQUERIMIENTO OBLIGATORIO:
-        Debes generar como MÍNIMO TRES (3) indicadores por cada categoría en la sección de 'Seguimiento a la Estrategia' (9 indicadores en total):
-        1. **Indicadores de Proceso (Seguimiento)**: Al menos 3. Miden el avance en la ejecución de las acciones y el cumplimiento de lo planificado (Nivel de implementación).
-        2. **Indicadores de Resultado**: Al menos 3. Miden los cambios intermedios en las prácticas pedagógicas o de gestión. Permiten observar si la ejecución está generando transformaciones relevantes.
-        3. **Indicadores de Impacto**: Al menos 3. Miden el cambio significativo, final y verificable que la estrategia produce en los aprendizajes de los estudiantes o en la gestión institucional, en coherencia con el objetivo estratégico.
+        REQUERIMIENTO OBLIGATORIO DE INDICADORES:
+        Debes generar 9 indicadores en total (3 por categoría) para la sección de 'Seguimiento a la Estrategia':
+        1. **Proceso**: Al menos 3 que midan el cumplimiento de actividades/hitos.
+        2. **Resultado**: Al menos 3 que midan cambios en las prácticas o productos intermedios.
+        3. **Impacto**: Al menos 3 que midan el efecto final en los aprendizajes o gestión institucional.
 
-        INSTRUCCIONES GENERALES:
-        1.  **Completa la Ficha:** Rellena TODOS los campos de la plantilla. Sé técnico, preciso y coherente con los Estándares de Desempeño.
-        ${nudosCriticos ? '2.  **FOCO EN NUDOS CRÍTICOS:** Asegúrate de que las acciones propuestas aborden directamente los nudos críticos o focos de aprendizaje mencionados anteriormente.' : ''}
-        ${nudosCriticos ? '3' : '2'}.  **Meta Estratégica:** Si el usuario proporcionó una meta ("${metaEstrategica}"), úsala. Si no, genera una meta SMART y concisa vinculada al objetivo.
-        ${nudosCriticos ? '4' : '3'}.  **Formato de Salida:** Usa estrictamente el siguiente formato Markdown.
+        FORMATO DE SALIDA:
+        Usa estrictamente la siguiente plantilla Markdown. Sé exhaustivo en las descripciones.
 
         --- INICIO DE LA PLANTILLA ---
 
@@ -339,22 +344,22 @@ export const generatePmeActions = async (params: PmeActionParams): Promise<{ tex
         | Campo | Contenido |
         | :--- | :--- |
         | **Objetivo Estratégico** | ${objEstrategico} |
-        | **Meta Estratégica** | ${metaEstrategica ? metaEstrategica : '[Genera aquí una meta SMART y concisa vinculada al objetivo]'} |
+        | **Meta Estratégica** | ${metaEstrategica ? metaEstrategica : '[Genera aquí una meta SMART vinculada al objetivo]'} |
         | **Estrategia** | ${estrategia} |
         | **Subdimensión** | ${subdimension} |
 
         ## Seguimiento a la Estrategia
         | Tipo de Indicador | Nombre Indicador | Descripción Indicador |
         | :--- | :--- | :--- |
-        | **Proceso** | Propuesta de Indicador de Proceso 1 | [Descripción] |
-        | **Proceso** | Propuesta de Indicador de Proceso 2 | [Descripción] |
-        | **Proceso** | Propuesta de Indicador de Proceso 3 | [Descripción] |
-        | **Resultado** | Propuesta de Indicador de resultado 1 | [Descripción] |
-        | **Resultado** | Propuesta de Indicador de resultado 2 | [Descripción] |
-        | **Resultado** | Propuesta de Indicador de resultado 3 | [Descripción] |
-        | **Impacto** | Propuesta de Indicador de Impacto 1 | [Descripción] |
-        | **Impacto** | propuesta de Indicador de Impacto 2 | [Descripción] |
-        | **Impacto** | propuesta de Indicador de Impacto 3 | [Descripción] |
+        | **Proceso** | [Nombre] | [Descripción] |
+        | **Proceso** | [Nombre] | [Descripción] |
+        | **Proceso** | [Nombre] | [Descripción] |
+        | **Resultado** | [Nombre] | [Descripción] |
+        | **Resultado** | [Nombre] | [Descripción] |
+        | **Resultado** | [Nombre] | [Descripción] |
+        | **Impacto** | [Nombre] | [Descripción] |
+        | **Impacto** | [Nombre] | [Descripción] |
+        | **Impacto** | [Nombre] | [Descripción] |
 
         ## Acciones Propuestas
         ${actionBlocks}
@@ -362,29 +367,30 @@ export const generatePmeActions = async (params: PmeActionParams): Promise<{ tex
     `;
     
     let lastError: Error | null = null;
-    const modelForActions = complexModelsToTry[0];
+    for (const modelName of complexModelsToTry) {
+        try {
+            const response = await callAi(modelName, promptText, {
+                tools: useGoogleSearch ? [{ googleSearch: {} }] : []
+            });
 
-    try {
-        const response = await callAi(modelForActions, promptText, {
-            tools: useGoogleSearch ? [{ googleSearch: {} }] : []
-        });
+            const text = response.text;
+            if (text) {
+                const citations = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+                return { text, citations };
+            }
+            
+            throw new Error('La IA devolvió una respuesta vacía.');
 
-        const text = response.text;
-        if (text) {
-            // Updated property access for @google/genai v1
-            const citations = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-            return { text, citations };
+        } catch (error) {
+            console.warn(`Intento fallido con ${modelName} (Actions):`, error);
+            lastError = error as Error;
+            if (lastError.message.includes('API key')) break;
         }
-        
-        throw new Error('La IA devolvió una respuesta vacía.');
-
-    } catch (error) {
-        console.error(`Error con el modelo ${modelForActions}:`, error);
-        lastError = error as Error;
     }
 
-    throw lastError || new Error("El modelo de IA falló. Por favor, inténtalo de nuevo más tarde.");
+    throw lastError || new Error("El modelo de IA falló al generar las acciones.");
 };
+
 
 export const generateSmartObjective = async (params: {
     accion: string;
@@ -729,7 +735,7 @@ export const generateAnnualPlan = async (params: {
         4. Aplica principios de neurociencia (atención, memoria, emoción) y DUA (múltiples formas de representación, acción y expresión, y compromiso).`;
 
     const response = await callAi('gemini-3-flash-preview', promptText, {
-        responseMimeType: 'application/json'
+        config: { responseMimeType: 'application/json' }
     });
 
     return JSON.parse(response.text || '{}');
@@ -776,7 +782,7 @@ export const generateUnitPlan = async (params: {
         5. Aplica DUA y Neurociencias en cada actividad.`;
 
     const response = await callAi('gemini-3-flash-preview', promptText, {
-        responseMimeType: 'application/json'
+        config: { responseMimeType: 'application/json' }
     });
 
     return JSON.parse(response.text || '{}');
@@ -854,7 +860,7 @@ export const evaluatePmeCoherence = async (params: {
     let lastError: Error | null = null;
     for (const modelName of complexModelsToTry) {
         try {
-            const response = await callAi(modelName, promptText, {}, parts);
+            const response = await callAi(modelName, promptText, { parts });
             const text = response.text;
             if (text) return text.trim();
         } catch (error) {
@@ -954,7 +960,7 @@ export const evaluatePmeActionsCoherence = async (params: {
     for (const modelName of fastModelsToTry) {
         try {
             const response = await callAi(modelName, promptText, {
-                responseMimeType: "application/json"
+                config: { responseMimeType: "application/json" }
             });
             const text = response.text;
             return parseCleanJson(text || '{}');
@@ -1022,7 +1028,7 @@ export const evaluatePmeIndicator = async (params: {
     for (const modelName of fastModelsToTry) {
         try {
             const response = await callAi(modelName, promptText, {
-                responseMimeType: "application/json"
+                config: { responseMimeType: "application/json" }
             });
             return parseCleanJson(response.text || '{}');
         } catch (error) {
@@ -1106,9 +1112,12 @@ export const extractPmeStructure = async (fileData: { mimeType: string, data: st
     for (const modelName of complexModelsToTry) {
         try {
             const response = await callAi(modelName, promptText, {
-                responseMimeType: "application/json",
-                temperature: 0.1
-            }, parts);
+                config: {
+                    responseMimeType: "application/json",
+                    temperature: 0.1
+                },
+                parts
+            });
 
             const text = response.text;
             if (text) return parseCleanJson(text);

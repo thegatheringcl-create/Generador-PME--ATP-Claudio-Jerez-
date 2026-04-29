@@ -77,7 +77,7 @@ export default function PmeGenerator() {
     const [customPlanObjectives, setCustomPlanObjectives] = useState<Record<string, string>>({});
     const [selectedEstandares, setSelectedEstandares] = useState<string[]>([]);
     const [cantidad, setCantidad] = useState<number>(1);
-    const [useGoogleSearch, setUseGoogleSearch] = useState<boolean>(false);
+    const [useGoogleSearch, setUseGoogleSearch] = useState<boolean>(true);
     const [showPlanningDates, setShowPlanningDates] = useState<boolean>(false);
     const [refineEstrategiaConceptos, setRefineEstrategiaConceptos] = useState<string>('');
     const [nudosCriticos, setNudosCriticos] = useState<string>('');
@@ -298,6 +298,19 @@ export default function PmeGenerator() {
         });
     };
     
+    const handleApiError = (error: any, context: string) => {
+        const errorMessage = (error as Error).message || 'Ocurrió un error desconocido.';
+        let displayMessage = `Error al generar ${context}:\n${errorMessage}`;
+        
+        if (errorMessage.includes('Forbidden') || errorMessage.includes('403')) {
+            displayMessage = `ERROR DE PERMISOS (403): Tu API Key no tiene acceso a los modelos de Gemini 3.x o la región está restringida. Verifica tu configuración en Settings > Secrets o intenta configurar GEMINI_API_KEY.`;
+        } else if (errorMessage.includes('Clave de API no configurada') || errorMessage.includes('API key not found')) {
+            displayMessage = `ERROR DE CONFIGURACIÓN: No se detectó la clave de API (GEMINI_API_KEY). Asegúrate de añadirla en los ajustes del proyecto (Settings > Secrets) o como Variable de Entorno en tu hosting (Vercel/Netlify).`;
+        }
+        
+        setMessage({ type: 'error', text: displayMessage });
+    };
+
     const handleGenerateStrategicObjective = async () => {
         setMessage(null);
         const isNoVincular = selectedPlanes.includes('No vincular');
@@ -312,8 +325,7 @@ export default function PmeGenerator() {
             const suggestion = await generateStrategicObjectiveSuggestion({ dimension, subdimension, planesData });
             setObjEstrategico(suggestion);
         } catch (error) {
-             const errorMessage = (error as Error).message || 'Ocurrió un error desconocido.';
-             setMessage({ type: 'error', text: `Error al generar sugerencia:\n${errorMessage}` });
+            handleApiError(error, 'objetivo estratégico');
         } finally {
             setIsGeneratingObjective(false);
         }
@@ -331,8 +343,7 @@ export default function PmeGenerator() {
             const suggestion = await generateMetaEstrategica({ objEstrategico, dimension, subdimension });
             setMetaEstrategica(suggestion);
         } catch (error) {
-            const errorMessage = (error as Error).message || 'Ocurrió un error desconocido.';
-            setMessage({ type: 'error', text: `Error al generar meta:\n${errorMessage}` });
+            handleApiError(error, 'meta estratégica');
         } finally {
             setIsGeneratingMeta(false);
         }
@@ -368,12 +379,7 @@ export default function PmeGenerator() {
             setEstrategia(suggestion);
             setRefineEstrategiaConceptos(''); // Clear after refinement
         } catch (error) {
-             const errorMessage = (error as Error).message || 'Ocurrió un error desconocido.';
-             let displayMessage = `Error al generar estrategia:\n${errorMessage}`;
-             if (errorMessage.includes('Forbidden')) {
-                 displayMessage = "ERROR: Acceso Prohibido (Forbidden). Esto suele ocurrir si tu API Key de Gemini no tiene permisos para el modelo seleccionado o ha expirado. Por favor, revisa la configuración de tu API Key en los ajustes (Settings > Secrets).";
-             }
-             setMessage({ type: 'error', text: displayMessage });
+            handleApiError(error, 'estrategia');
         } finally {
             setIsGeneratingEstrategia(false);
         }
@@ -416,12 +422,7 @@ export default function PmeGenerator() {
             });
             setResult({ html: markdownToHtml(text), citations: citations || [] });
         } catch (error) {
-            const errorMessage = (error as Error).message || 'Ocurrió un error desconocido.';
-            let displayMessage = `OCURRIÓ UN ERROR:\n${errorMessage}`;
-            if (errorMessage.includes('Forbidden')) {
-                displayMessage = "ERROR: Acceso Prohibido (Forbidden). Esto suele ocurrir si tu API Key de Gemini no tiene permisos para el modelo seleccionado o ha expirado. Por favor, revisa la configuración de tu API Key en los ajustes (Settings > Secrets).";
-            }
-            setMessage({ type: 'error', text: displayMessage });
+            handleApiError(error, 'propuesta de acciones');
         } finally {
             setIsLoading(false);
         }
@@ -766,16 +767,26 @@ export default function PmeGenerator() {
                 </div>
             </div>
             
-            <div className="form-group mb-6 flex items-center justify-between gap-4">
-                <div>
+            <div className="form-group mb-6 flex flex-wrap items-end justify-between gap-6">
+                <div className="flex-1 min-w-[200px]">
                     <label htmlFor="cantidad" className="block mb-2 font-bold text-pme-primary">9. Cantidad de Acciones:</label>
-                    <input type="number" id="cantidad" value={isNaN(cantidad) ? '' : cantidad} onChange={e => setCantidad(e.target.value === '' ? NaN : parseInt(e.target.value, 10))} min="1" max="5" className="w-full md:w-1/2 p-2 border border-gray-300 rounded-md focus:ring-pme-secondary focus:border-pme-secondary"/>
+                    <input type="number" id="cantidad" value={isNaN(cantidad) ? '' : cantidad} onChange={e => setCantidad(e.target.value === '' ? NaN : parseInt(e.target.value, 10))} min="1" max="5" className="w-full p-2 border border-gray-300 rounded-md focus:ring-pme-secondary focus:border-pme-secondary shadow-sm"/>
                 </div>
-                <div className="flex items-center gap-2 mt-8">
-                     <input type="checkbox" id="googleSearch" checked={useGoogleSearch} onChange={e => setUseGoogleSearch(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-pme-secondary focus:ring-pme-secondary"/>
-                    <label htmlFor="googleSearch" className="text-sm font-medium text-pme-primary flex items-center gap-1" title="Fundamenta la respuesta con información actualizada de la web.">
-                       Usar Google Search <span className="material-symbols-outlined text-base text-blue-500">google</span>
-                    </label>
+                
+                <div className="flex-1 min-w-[240px]">
+                    <div className={`p-4 rounded-xl border-2 transition-all duration-500 cursor-pointer flex flex-col gap-2 ${useGoogleSearch ? 'bg-blue-50 border-blue-400 shadow-md' : 'bg-gray-50 border-gray-200 opacity-80'}`} onClick={() => setUseGoogleSearch(!useGoogleSearch)}>
+                        <div className="flex items-center justify-between">
+                            <label htmlFor="googleSearch" className="text-sm font-black text-pme-primary flex items-center gap-2 cursor-pointer">
+                                AI + GOOGLE SEARCH
+                                <span className={`flex h-2 w-2 rounded-full ${useGoogleSearch ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></span>
+                            </label>
+                            <div className={`w-10 h-5 rounded-full relative transition-colors duration-300 ${useGoogleSearch ? 'bg-blue-500' : 'bg-gray-300'}`}>
+                                <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-300 shadow-sm ${useGoogleSearch ? 'translate-x-5.5' : 'translate-x-0.5'}`}></div>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-gray-500 font-medium">Búsqueda avanzada para fundamentar acciones con evidencia actualizada.</p>
+                        <input type="checkbox" id="googleSearch" checked={useGoogleSearch} onChange={e => setUseGoogleSearch(e.target.checked)} className="hidden"/>
+                    </div>
                 </div>
             </div>
 

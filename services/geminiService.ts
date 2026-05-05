@@ -101,15 +101,15 @@ const formatGeminiError = (error: any): string => {
 
 // Using stable model aliases for reliable performance
 const complexModelsToTry = [
-    'gemini-3.1-pro-preview',
-    'gemini-3-flash-preview',
-    'gemini-1.5-pro-latest' // Fallback to 1.5 if 3.x series is unavailable
+    'gemini-1.5-pro',
+    'gemini-1.5-flash',
+    'gemini-2.0-flash'
 ];
 
 // Using fast models for suggestions
 const fastModelsToTry = [
-    'gemini-3-flash-preview',
-    'gemini-1.5-flash-latest' // Fallback
+    'gemini-1.5-flash',
+    'gemini-2.0-flash'
 ];
 
 
@@ -734,11 +734,19 @@ export const generateAnnualPlan = async (params: {
         3. El nombre de la unidad debe ser motivador y relacionado con los OA.
         4. Aplica principios de neurociencia (atención, memoria, emoción) y DUA (múltiples formas de representación, acción y expresión, y compromiso).`;
 
-    const response = await callAi('gemini-3-flash-preview', promptText, {
-        config: { responseMimeType: 'application/json' }
-    });
-
-    return JSON.parse(response.text || '{}');
+    let lastError: Error | null = null;
+    for (const modelName of fastModelsToTry) {
+        try {
+            const response = await callAi(modelName, promptText, {
+                config: { responseMimeType: 'application/json' }
+            });
+            return JSON.parse(response.text || '{}');
+        } catch (error) {
+            lastError = error as Error;
+            console.warn(`Error en plan anual con ${modelName}:`, error);
+        }
+    }
+    throw lastError || new Error("Error al generar el plan anual.");
 };
 
 export const generateUnitPlan = async (params: {
@@ -781,11 +789,19 @@ export const generateUnitPlan = async (params: {
         4. Incluye preguntas de metacognición para el cierre.
         5. Aplica DUA y Neurociencias en cada actividad.`;
 
-    const response = await callAi('gemini-3-flash-preview', promptText, {
-        config: { responseMimeType: 'application/json' }
-    });
-
-    return JSON.parse(response.text || '{}');
+    let lastError: Error | null = null;
+    for (const modelName of fastModelsToTry) {
+        try {
+            const response = await callAi(modelName, promptText, {
+                config: { responseMimeType: 'application/json' }
+            });
+            return JSON.parse(response.text || '{}');
+        } catch (error) {
+            lastError = error as Error;
+            console.warn(`Error en plan de unidad con ${modelName}:`, error);
+        }
+    }
+    throw lastError || new Error("Error al generar el plan de unidad.");
 };
 
 /**

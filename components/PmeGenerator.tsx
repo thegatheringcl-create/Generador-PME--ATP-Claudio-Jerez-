@@ -12,6 +12,7 @@ import { collection, addDoc, serverTimestamp, getDocs, query, where, orderBy, li
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import AdminPanel from './AdminPanel';
 
 // Helper function to parse the structured markdown into styled HTML
 function markdownToHtml(markdown: string): string {
@@ -219,8 +220,16 @@ export default function PmeGenerator() {
     const handleLogin = async () => {
         try {
             await loginWithGoogle();
-        } catch (error) {
-            setMessage({ type: 'error', text: 'Error al iniciar sesión con Google.' });
+        } catch (error: any) {
+            console.error('Login error:', error);
+            if (error.code === 'auth/popup-closed-by-user') {
+                setMessage({ type: 'info', text: 'Inicio de sesión cancelado (ventana emergente cerrada).' });
+            } else if (error.code === 'auth/cancelled-popup-request') {
+                // Secondary error when multiple popups are tried
+                return;
+            } else {
+                setMessage({ type: 'error', text: 'Error al iniciar sesión con Google: ' + (error.message || error) });
+            }
         }
     };
 
@@ -487,6 +496,10 @@ export default function PmeGenerator() {
                     </button>
                 )}
             </div>
+
+            {user?.email === 'thegathering.cl@gmail.com' && (
+                <AdminPanel adminUid={user.uid} />
+            )}
 
             <h1 className="text-3xl sm:text-4xl font-bold text-center text-pme-primary mb-1">
                 PLANIFICADOR PME 2026

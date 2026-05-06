@@ -103,13 +103,14 @@ const formatGeminiError = (error: any): string => {
 const complexModelsToTry = [
     'gemini-1.5-pro',
     'gemini-1.5-flash',
-    'gemini-2.0-flash'
+    'gemini-2.0-flash-exp'
 ];
 
 // Using fast models for suggestions
 const fastModelsToTry = [
     'gemini-1.5-flash',
-    'gemini-2.0-flash'
+    'gemini-1.5-pro',
+    'gemini-2.0-flash-exp'
 ];
 
 

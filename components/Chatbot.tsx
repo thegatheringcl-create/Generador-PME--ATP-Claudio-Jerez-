@@ -39,7 +39,7 @@ export default function Chatbot({ onClose }: ChatbotProps) {
             }
             const genAI = new GoogleGenAI({ apiKey });
             const chat = genAI.chats.create({
-                model: 'gemini-3-flash-preview',
+                model: 'gemini-1.5-flash',
                 config: {
                     systemInstruction: 'Eres un asistente experto en educación y en el sistema PME de Chile. Responde las preguntas de los usuarios de forma concisa y útil.'
                 },

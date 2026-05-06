@@ -41,7 +41,7 @@ export default function EvaluadorLector() {
                         `;
 
             const result = await genAI.models.generateContent({
-                model: "gemini-3-flash-preview",
+                model: "gemini-1.5-flash",
                 contents: [{ parts: [{ text: prompt }] }],
                 config: {
                     safetySettings: [

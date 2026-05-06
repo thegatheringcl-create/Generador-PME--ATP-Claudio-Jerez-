@@ -32,14 +32,14 @@ export default function Chatbot({ onClose }: ChatbotProps) {
         setIsLoading(true);
 
         try {
-            const apiKey = process.env.GEMINI_API_KEY;
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
                            
             if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
                 throw new Error("GEMINI_API_KEY no está configurada en los ajustes del proyecto.");
             }
             const genAI = new GoogleGenAI({ apiKey });
             const chat = genAI.chats.create({
-                model: 'gemini-1.5-flash',
+                model: 'gemini-3.1-pro-preview',
                 config: {
                     systemInstruction: 'Eres un asistente experto en educación y en el sistema PME de Chile. Responde las preguntas de los usuarios de forma concisa y útil.'
                 },

@@ -311,8 +311,8 @@ export default function PmeGenerator() {
         const errorMessage = (error as Error).message || 'Ocurrió un error desconocido.';
         let displayMessage = `Error al generar ${context}:\n${errorMessage}`;
         
-        if (errorMessage.includes('Forbidden') || errorMessage.includes('403')) {
-            displayMessage = `ERROR DE PERMISOS (403): Tu API Key no tiene permiso para realizar esta acción o la región está restringida. Verifica tu configuración de GEMINI_API_KEY.`;
+        if (errorMessage.includes('Forbidden') || errorMessage.includes('403') || errorMessage.includes('PERMISSION_DENIED')) {
+            displayMessage = `ERROR DE PERMISOS (403): Tu API Key no tiene permisos suficientes para usar esta versión de Gemini o la región está restringida. Verifica que la API de Gemini ("Generative Language API") esté habilitada en tu proyecto de Google Cloud, o utiliza "AI Studio Free Tier".`;
         } else if (errorMessage.includes('Clave de API no configurada') || errorMessage.includes('API key not found')) {
             displayMessage = `ERROR DE CONFIGURACIÓN: No se detectó la clave de API (GEMINI_API_KEY). Asegúrate de añadirla en los ajustes del proyecto (Settings > Secrets) o como Variable de Entorno en tu hosting (Vercel/Netlify).`;
         }

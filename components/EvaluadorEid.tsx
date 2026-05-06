@@ -34,7 +34,7 @@ export default function EvaluadorEid() {
         setMessage(null);
 
         try {
-            const apiKey = process.env.GEMINI_API_KEY;
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
             if (!apiKey || apiKey === 'undefined' || apiKey === 'null') {
                 throw new Error("Clave de API no configurada en los ajustes del proyecto.");
             }
@@ -57,7 +57,7 @@ export default function EvaluadorEid() {
                         `;
 
             const result = await genAI.models.generateContent({
-                model: "gemini-1.5-flash",
+                model: "gemini-3-flash-preview",
                 contents: [{ parts: [{ text: prompt }] }],
                 config: {
                     safetySettings: [

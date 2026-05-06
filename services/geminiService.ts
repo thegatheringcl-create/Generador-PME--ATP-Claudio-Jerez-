@@ -42,8 +42,8 @@ interface MetaEstrategicaParams {
 
 // Helper to get a fresh instance of GoogleGenAI with the latest API key
 const getAiInstance = () => {
-    // In this environment, process.env.GEMINI_API_KEY is the standard way to access the key
-    const apiKey = process.env.GEMINI_API_KEY;
+    // In this environment, use process.env.GEMINI_API_KEY as primary. If user misconfigured VITE_GEMINI_API_KEY, it won't break unless strictly needed.
+    const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
     
     // Explicitly check for common "missing key" string representations
     if (!apiKey || apiKey === 'undefined' || apiKey === 'null' || apiKey === '') {
@@ -87,8 +87,8 @@ const callAi = async (modelName: string, promptText: string, options: { tools?: 
 const formatGeminiError = (error: any): string => {
     if (!error) return 'Todos los modelos fallaron';
     const msg = error.message || String(error);
-    if (msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('RESOURCE_EXHAUSTED')) {
-        return 'Has alcanzado el límite de consultas gratuitas de la IA por minuto. Por favor, espera unos 30 segundos y vuelve a intentarlo.';
+    if (msg.includes('429') || msg.includes('Quota exceeded') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('503') || msg.includes('UNAVAILABLE')) {
+        return 'El modelo está experimentando alta demanda o has alcanzado el límite de consultas. Por favor, espera unos segundos y vuelve a intentarlo.';
     }
     if (msg.includes('404') || msg.includes('not found')) {
         return 'El modelo de IA seleccionado no está disponible temporalmente.';
@@ -101,14 +101,14 @@ const formatGeminiError = (error: any): string => {
 
 // Using stable model aliases for reliable performance
 const complexModelsToTry = [
-    'gemini-1.5-pro',
-    'gemini-1.5-flash'
+    'gemini-2.5-pro',
+    'gemini-2.5-flash'
 ];
 
 // Using fast models for suggestions
 const fastModelsToTry = [
-    'gemini-1.5-flash',
-    'gemini-1.5-pro'
+    'gemini-flash-lite-latest',
+    'gemini-2.5-flash'
 ];
 
 
@@ -203,7 +203,7 @@ export const generateMetaEstrategica = async (params: MetaEstrategicaParams): Pr
         - E (Específico): Es clara, directa y fácil de imaginar sin ambigüedades.
         
         INSTRUCCIONES:
-        - Redacta una meta MARTE coherente con el objetivo estratégico proporcionado.
+        - Redacta una meta MARTE coherente con el objetivo estratégico proporcionado: "${objEstrategico}"
         - Debe redactarse usando la fórmula: [Indicador Cuantitativo] + [Acción realizada] + [Práctica/Procedimiento] + [Contexto de logro] + [Temporalidad].
         - No incluyas títulos ni introducciones. Solo el texto de la meta.
         

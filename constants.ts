@@ -1,4 +1,6 @@
 
+import { Level, Dimension, StandardData, ObjectiveMeta } from './types.ts';
+
 export const dataMap = {
     "Liderazgo": ["Liderazgo del Sostenedor", "Liderazgo del Director", "Planificación y Gestión de Resultados"],
     "Gestión Pedagógica": ["Gestión Curricular", "Enseñanza y Aprendizaje en el Aula", "Apoyo al Desarrollo de los Estudiantes"],

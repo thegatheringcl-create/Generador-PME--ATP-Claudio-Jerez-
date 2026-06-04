@@ -1,21 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
+import EvaluacionEstandares from './components/EvaluacionEstandares';
 import PmeGenerator from './components/PmeGenerator';
-import ObjectiveGoalGenerator from './components/ObjectiveGoalGenerator';
+import PlanAnualCompras from './components/PlanAnualCompras';
 import RevisorPme from './components/RevisorPme';
-import EvaluadorLector from './components/EvaluadorLector';
-import EvaluadorEid from './components/EvaluadorEid';
-import DocentePlanner from './components/DocentePlanner';
+import BaseDeDatos from './components/BaseDeDatos';
 import Chatbot from './components/Chatbot';
 import Tutorial from './components/Tutorial';
 import Login from './components/Login';
 import FirebaseSettings from './components/FirebaseSettings';
 import { loginAnonymously } from './firebase';
 
-type Tab = 'pme' | 'goals' | 'revisor' | 'lector' | 'eid' | 'docente';
+type Tab = 'evaluacion' | 'pme' | 'compras' | 'revisor' | 'database';
 
 export default function App() {
-    const [activeTab, setActiveTab] = useState<Tab>('pme');
+    const [activeTab, setActiveTab] = useState<Tab>('evaluacion');
     const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
     const [isFirebaseSettingsOpen, setIsFirebaseSettingsOpen] = useState<boolean>(false);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -116,21 +115,19 @@ export default function App() {
             </div>
 
             <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar bg-gray-50 rounded-t-lg">
-                <TabButton tabId="pme" currentTab={activeTab} setTab={setActiveTab} icon="description">Planificador PME</TabButton>
-                <TabButton tabId="goals" currentTab={activeTab} setTab={setActiveTab} icon="target">Objetivos y Metas</TabButton>
-                <TabButton tabId="revisor" currentTab={activeTab} setTab={setActiveTab} icon="fact_check">Revisor de Calidad</TabButton>
-                <TabButton tabId="lector" currentTab={activeTab} setTab={setActiveTab} icon="menu_book">Evaluador Lector</TabButton>
-                <TabButton tabId="eid" currentTab={activeTab} setTab={setActiveTab} icon="analytics">Evaluador EID</TabButton>
-                <TabButton tabId="docente" currentTab={activeTab} setTab={setActiveTab} icon="person_search">Planificador Docente</TabButton>
+                <TabButton tabId="evaluacion" currentTab={activeTab} setTab={setActiveTab} icon="analytics">EVALUACIÓN ESTÁNDARES</TabButton>
+                <TabButton tabId="pme" currentTab={activeTab} setTab={setActiveTab} icon="description">PLANIFICADOR PME</TabButton>
+                <TabButton tabId="compras" currentTab={activeTab} setTab={setActiveTab} icon="shopping_cart">PLAN ANUAL DE COMPRAS</TabButton>
+                <TabButton tabId="revisor" currentTab={activeTab} setTab={setActiveTab} icon="fact_check">REVISOR CALIDAD PME</TabButton>
+                <TabButton tabId="database" currentTab={activeTab} setTab={setActiveTab} icon="database">BASE DE DATOS</TabButton>
             </div>
             
             <div className="bg-white rounded-b-xl shadow-2xl overflow-hidden min-h-[600px]">
+                {activeTab === 'evaluacion' && <EvaluacionEstandares establecimiento={userEstablishment} />}
                 {activeTab === 'pme' && <PmeGenerator />}
-                {activeTab === 'goals' && <ObjectiveGoalGenerator />}
+                {activeTab === 'compras' && <PlanAnualCompras />}
                 {activeTab === 'revisor' && <RevisorPme />}
-                {activeTab === 'lector' && <EvaluadorLector />}
-                {activeTab === 'eid' && <EvaluadorEid />}
-                {activeTab === 'docente' && <DocentePlanner />}
+                {activeTab === 'database' && <BaseDeDatos />}
             </div>
 
             {/* Chatbot and FAB */}

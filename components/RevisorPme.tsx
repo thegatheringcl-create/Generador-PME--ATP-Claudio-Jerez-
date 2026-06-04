@@ -242,7 +242,7 @@ const RevisorPme: React.FC = () => {
             setProcessingFile(true);
             try {
                 const base64 = await readFileAsBase64(file);
-                const result = await extractPmeStructure(base64);
+                const result = await extractPmeStructure(base64.data);
                 
                 if (result.strategicLines && result.strategicLines.length > 0) {
                     // Map result to our structure adding IDs

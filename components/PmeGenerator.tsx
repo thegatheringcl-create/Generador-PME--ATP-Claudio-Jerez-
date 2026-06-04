@@ -77,6 +77,7 @@ export default function PmeGenerator() {
     const [selectedPlanObjectives, setSelectedPlanObjectives] = useState<Record<string, string[]>>({});
     const [customPlanObjectives, setCustomPlanObjectives] = useState<Record<string, string>>({});
     const [selectedEstandares, setSelectedEstandares] = useState<string[]>([]);
+    const [evaluacionEstandares, setEvaluacionEstandares] = useState<Record<string, number>>({});
     const [cantidad, setCantidad] = useState<number>(1);
     const [useGoogleSearch, setUseGoogleSearch] = useState<boolean>(true);
     const [showPlanningDates, setShowPlanningDates] = useState<boolean>(false);
@@ -130,6 +131,7 @@ export default function PmeGenerator() {
         setSelectedPlanObjectives({});
         setCustomPlanObjectives({});
         setSelectedEstandares([]);
+        setEvaluacionEstandares({});
         setCantidad(1);
         setUseGoogleSearch(false);
         setRefineEstrategiaConceptos('');
@@ -375,13 +377,20 @@ export default function PmeGenerator() {
         }));
         setIsGeneratingEstrategia(true);
         try {
+            const estandaresContext = selectedEstandares.map(std => {
+                const evalNivel = evaluacionEstandares[std];
+                const labels = ['Incipiente', 'Débil', 'Satisfactorio', 'Avanzado'];
+                const evalText = evalNivel ? ` (Autoevaluación: Nivel ${evalNivel} - ${labels[evalNivel-1]})` : '';
+                return `${std}${evalText}`;
+            });
+
             const suggestion = await generateEstrategia({ 
                 dimension, 
                 subdimension, 
                 objEstrategico, 
                 metaEstrategica, 
                 planesData, 
-                estandaresSeleccionados: selectedEstandares,
+                estandaresSeleccionados: estandaresContext,
                 conceptosRefinamiento: refineEstrategiaConceptos,
                 estrategiaActual: estrategia
             });
@@ -426,8 +435,15 @@ export default function PmeGenerator() {
         setIsLoading(true);
 
         try {
+            const estandaresContext = selectedEstandares.map(std => {
+                const evalNivel = evaluacionEstandares[std];
+                const labels = ['Incipiente', 'Débil', 'Satisfactorio', 'Avanzado'];
+                const evalText = evalNivel ? ` (Autoevaluación: Nivel ${evalNivel} - ${labels[evalNivel-1]})` : '';
+                return `${std}${evalText}`;
+            });
+
             const { text, citations } = await generatePmeActions({
-                cantidad: finalCantidad, dimension, subdimension, objEstrategico, metaEstrategica, estrategia, planesData, useGoogleSearch, estandaresSeleccionados: selectedEstandares, nudosCriticos
+                cantidad: finalCantidad, dimension, subdimension, objEstrategico, metaEstrategica, estrategia, planesData, useGoogleSearch, estandaresSeleccionados: estandaresContext, nudosCriticos
             });
             setResult({ html: markdownToHtml(text), citations: citations || [] });
         } catch (error) {
@@ -594,32 +610,64 @@ export default function PmeGenerator() {
             </div>
 
             {subdimension && (estandaresPME as any)[dimension]?.[subdimension] && (
-                <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-md">
-                    <h4 className="text-sm font-bold text-blue-800 mb-2 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-base">verified</span>
-                            Selecciona Estándares de Desempeño (Mínimo 1):
+                <div className="mb-6 bg-white border border-gray-200 p-4 rounded-md shadow-sm">
+                    <div className="mb-4">
+                        <h4 className="text-lg font-bold text-pme-primary flex items-center gap-2 mb-1">
+                            <span className="material-symbols-outlined text-pme-accent">assignment_turned_in</span>
+                            Autoevaluación de Estándares Indicativos de Desempeño
+                        </h4>
+                        <p className="text-xs text-gray-500">Evalúa el nivel de desarrollo de tu institución en cada estándar e indica cuáles quieres abordar en tu propuesta PME (Mínimo 1). La IA se basará en estos estándares para enfocar la estrategia y acciones.</p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <div className="flex justify-end mb-2 hidden sm:flex">
+                            <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-bold">
+                                {selectedEstandares.length} estándar(es) seleccionado(s)
+                            </span>
                         </div>
-                        <span className="text-[10px] bg-blue-200 px-2 py-0.5 rounded-full">{selectedEstandares.length} seleccionados</span>
-                    </h4>
-                    <div className="grid sm:grid-cols-2 gap-2">
                         {(estandaresPME as any)[dimension][subdimension].map((std: string, idx: number) => (
-                            <label 
+                            <div 
                                 key={idx} 
-                                className={`flex items-start gap-2 p-2 rounded border transition-all cursor-pointer text-[11px] ${
+                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded border transition-all ${
                                     selectedEstandares.includes(std) 
-                                    ? 'bg-blue-100 border-blue-400 text-blue-900' 
-                                    : 'bg-white border-blue-100 text-blue-700 hover:bg-blue-50'
+                                    ? 'bg-blue-50 border-blue-300' 
+                                    : 'bg-white border-gray-200 hover:border-gray-300'
                                 }`}
                             >
-                                <input 
-                                    type="checkbox" 
-                                    className="mt-0.5 h-3 w-3 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
-                                    checked={selectedEstandares.includes(std)}
-                                    onChange={() => handleEstandardToggle(std)}
-                                />
-                                <span>{std}</span>
-                            </label>
+                                <label className="flex items-start gap-3 cursor-pointer flex-1 mb-3 sm:mb-0">
+                                    <input 
+                                        type="checkbox" 
+                                        className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        checked={selectedEstandares.includes(std)}
+                                        onChange={() => handleEstandardToggle(std)}
+                                    />
+                                    <span className={`text-xs ${selectedEstandares.includes(std) ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>{std}</span>
+                                </label>
+                                
+                                <div className="sm:ml-4 flex flex-col items-start sm:items-end w-full sm:w-auto mt-2 sm:mt-0">
+                                    <span className="text-[10px] text-gray-500 font-bold mb-1 ml-7 sm:ml-0">Nivel de Práctica Institucional:</span>
+                                    <div className="flex bg-gray-100 rounded p-1 ml-7 sm:ml-0 w-[calc(100%-28px)] sm:w-auto max-w-[320px]">
+                                        {[1, 2, 3, 4].map(nivel => {
+                                            const labels = ['Incipiente', 'Débil', 'Satisfactorio', 'Avanzado'];
+                                            const colors = ['bg-red-500', 'bg-orange-400', 'bg-yellow-400', 'bg-green-500'];
+                                            const isSelected = evaluacionEstandares[std] === nivel;
+                                            return (
+                                                <button 
+                                                    key={nivel}
+                                                    onClick={() => setEvaluacionEstandares(prev => ({ ...prev, [std]: nivel }))}
+                                                    className={`px-2 py-1.5 text-[9px] sm:text-[10px] font-bold rounded-sm transition-all flex-1 text-center ${
+                                                        isSelected 
+                                                        ? `${colors[nivel-1]} text-white shadow-sm` 
+                                                        : 'text-gray-500 hover:bg-gray-200'
+                                                    }`}
+                                                >
+                                                    {labels[nivel-1]}
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 </div>

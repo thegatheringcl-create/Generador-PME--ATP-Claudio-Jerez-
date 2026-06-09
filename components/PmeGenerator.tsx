@@ -2,7 +2,8 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { dataMap, objetivosNormativos, Plan } from '../constants';
 import { estandaresPME } from '../pme-guides';
-import { generatePmeActions, generateStrategicObjectiveSuggestion, generateEstrategia, generateMetaEstrategica } from '../services/geminiService';
+import { ESTRUCTURA_EID } from '../constants/eid';
+import { generatePmeActions, generateStrategicObjectiveSuggestion, generateEstrategia, generateMetaEstrategica, generateFaseEstrategicaFromDiagnostic } from '../services/geminiService';
 import type { Message } from '../types';
 import MessageBox from './MessageBox';
 import Spinner from './Spinner';
@@ -84,6 +85,11 @@ export default function PmeGenerator() {
     const [refineEstrategiaConceptos, setRefineEstrategiaConceptos] = useState<string>('');
     const [nudosCriticos, setNudosCriticos] = useState<string>('');
     
+    // Cycle info
+    const [cicloInicio, setCicloInicio] = useState<number>(new Date().getFullYear());
+    const [cicloFin, setCicloFin] = useState<number>(new Date().getFullYear() + 3);
+    const [anioProceso, setAnioProceso] = useState<number>(new Date().getFullYear());
+
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isGeneratingObjective, setIsGeneratingObjective] = useState<boolean>(false);
     const [isGeneratingMeta, setIsGeneratingMeta] = useState<boolean>(false);
@@ -119,6 +125,21 @@ export default function PmeGenerator() {
             testConnection();
         }
     }, [isAuthReady]);
+
+    // Ensure we load the global year configuration on initial load
+    React.useEffect(() => {
+        const savedDataStr = localStorage.getItem('eid_app_state_v3');
+        if (savedDataStr) {
+            try {
+                const diagState = JSON.parse(savedDataStr);
+                if (diagState.cicloInicio) setCicloInicio(diagState.cicloInicio);
+                if (diagState.cicloFin) setCicloFin(diagState.cicloFin);
+                if (diagState.anio) setAnioProceso(diagState.anio);
+            } catch (e) {
+                console.error("Error loading dates from diagState", e);
+            }
+        }
+    }, []);
 
     // Avoid window.confirm as it can break the browser locker behavior in some sandboxed environments
     const handleReset = () => {
@@ -243,6 +264,129 @@ export default function PmeGenerator() {
         }
     };
 
+    const handleLoadFromDiagnostic = async () => {
+        setMessage(null);
+        if (!dimension || !subdimension) {
+            setMessage({ type: 'warning', text: 'Selecciona una dimensión y subdimensión primero para cargar sus datos.' });
+            return;
+        }
+
+        const savedDataStr = localStorage.getItem('eid_app_state_v3');
+        if (!savedDataStr) {
+             setMessage({ type: 'info', text: 'No hay diagnóstico previo guardado. Ve a "EVALUACION INDICADORES DE DESEMPEÑO" para realizarlo.' });
+             return;
+        }
+
+        try {
+            const diagState = JSON.parse(savedDataStr);
+            let dimId = '';
+            let subDimId = '';
+
+            const foundDim = ESTRUCTURA_EID.find(d => d.nombre.toLowerCase() === dimension.toLowerCase());
+            if (foundDim) {
+                dimId = foundDim.id;
+                const normalizedSearch = subdimension.toLowerCase().replace('del', 'de');
+                const foundSub = foundDim.subdimensiones.find(s => s.nombre.toLowerCase().replace('del', 'de') === normalizedSearch);
+                if (foundSub) {
+                    subDimId = foundSub.id;
+                }
+            }
+
+            if (!dimId) {
+                const dimensionToId: Record<string, string> = {
+                    'Liderazgo': 'liderazgo',
+                    'Gestión Pedagógica': 'gestion_pedagogica',
+                    'Formación y Convivencia': 'formacion_convivencia',
+                    'Gestión de Recursos': 'gestion_recursos'
+                };
+                dimId = dimensionToId[dimension] || '';
+            }
+
+            if (dimId) {
+                let currentCicloInicio = anioProceso;
+                let currentCicloFin = anioProceso + 3;
+                let currentAnioProcess = anioProceso;
+                let currentNudosCriticos = nudosCriticos;
+
+                if (diagState.cicloInicio) { setCicloInicio(diagState.cicloInicio); currentCicloInicio = diagState.cicloInicio; }
+                if (diagState.cicloFin) { setCicloFin(diagState.cicloFin); currentCicloFin = diagState.cicloFin; }
+                if (diagState.anio) { setAnioProceso(diagState.anio); currentAnioProcess = diagState.anio; }
+
+                if (diagState.nudosCriticos && diagState.nudosCriticos[dimId]) {
+                    currentNudosCriticos = diagState.nudosCriticos[dimId];
+                    setNudosCriticos(currentNudosCriticos);
+                }
+
+                const loadedEvaluaciones: Record<string, number> = {};
+                let currentSelectedEstandares: string[] = [];
+
+                if (diagState.evaluaciones && foundDim) {
+                    const subDimDef = foundDim.subdimensiones.find(s => s.id === subDimId);
+                    if (subDimDef) {
+                        subDimDef.estandares.forEach(stdId => {
+                            if (diagState.evaluaciones[stdId]) {
+                                loadedEvaluaciones[stdId] = diagState.evaluaciones[stdId].nivel;
+                            }
+                        });
+                        setEvaluacionEstandares(loadedEvaluaciones);
+                        currentSelectedEstandares = Object.keys(loadedEvaluaciones).filter(k => loadedEvaluaciones[k] <= 2);
+                        setSelectedEstandares(currentSelectedEstandares);
+                    }
+                }
+
+                setIsGeneratingObjective(true);
+                setIsGeneratingMeta(true);
+                setIsGeneratingEstrategia(true);
+                setIsLoading(true);
+
+                try {
+                    const aiResult = await generateFaseEstrategicaFromDiagnostic({
+                        dimension,
+                        subdimension,
+                        nudosCriticos: currentNudosCriticos,
+                        evaluaciones: loadedEvaluaciones,
+                        cicloInicio: currentCicloInicio,
+                        cicloFin: currentCicloFin,
+                        anioProceso: currentAnioProcess
+                    });
+
+                    if (aiResult.objetivo) setObjEstrategico(aiResult.objetivo);
+                    if (aiResult.meta) setMetaEstrategica(aiResult.meta);
+                    if (aiResult.estrategia) setEstrategia(aiResult.estrategia);
+
+                    setMessage({ type: 'success', text: `Datos cargados y Propuesta Estratégica generada por IA para ${subdimension}.` });
+                } catch (aiError) {
+                    console.error("AI Generation failed", aiError);
+                    // Fallback to purely loaded data
+                    if (diagState.objetivosMetas && diagState.objetivosMetas[dimId]) {
+                        const dimData = diagState.objetivosMetas[dimId];
+                        if (dimData.objetivo) setObjEstrategico(dimData.objetivo);
+                        if (dimData.meta) setMetaEstrategica(dimData.meta);
+                        
+                        if (subDimId && dimData.estrategiasSubdimensiones && dimData.estrategiasSubdimensiones[subDimId]) {
+                            setEstrategia(dimData.estrategiasSubdimensiones[subDimId]);
+                        } else if (dimData.estrategia) {
+                            setEstrategia(dimData.estrategia);
+                        }
+                    }
+                    setMessage({ type: 'warning', text: 'Se cargaron los datos guardados, pero falló la generación automática por IA.' });
+                } finally {
+                    setIsGeneratingObjective(false);
+                    setIsGeneratingMeta(false);
+                    setIsGeneratingEstrategia(false);
+                    setIsLoading(false);
+                }
+
+            } else {
+                setMessage({ type: 'error', text: 'No se pudo mapear la dimensión con los datos guardados.' });
+            }
+
+        } catch (e) {
+            console.error("Error loading diagnostic state", e);
+            setMessage({ type: 'error', text: 'Error al procesar los datos de diagnóstico guardados.' });
+        }
+    };
+
     const subdimensiones = useMemo(() => {
         if (dimension && dataMap[dimension as keyof typeof dataMap]) {
             return dataMap[dimension as keyof typeof dataMap];
@@ -333,7 +477,7 @@ export default function PmeGenerator() {
         const planesData = isNoVincular ? [] : selectedPlanes.map(plan => ({ plan, objetivos: selectedPlanObjectives[plan] || [] }));
         setIsGeneratingObjective(true);
         try {
-            const suggestion = await generateStrategicObjectiveSuggestion({ dimension, subdimension, planesData });
+            const suggestion = await generateStrategicObjectiveSuggestion({ dimension, subdimension, planesData, cicloInicio, cicloFin, anioProceso });
             setObjEstrategico(suggestion);
         } catch (error) {
             handleApiError(error, 'objetivo estratégico');
@@ -351,7 +495,7 @@ export default function PmeGenerator() {
 
         setIsGeneratingMeta(true);
         try {
-            const suggestion = await generateMetaEstrategica({ objEstrategico, dimension, subdimension });
+            const suggestion = await generateMetaEstrategica({ objEstrategico, dimension, subdimension, cicloInicio, cicloFin, anioProceso });
             setMetaEstrategica(suggestion);
         } catch (error) {
             handleApiError(error, 'meta estratégica');
@@ -392,7 +536,10 @@ export default function PmeGenerator() {
                 planesData, 
                 estandaresSeleccionados: estandaresContext,
                 conceptosRefinamiento: refineEstrategiaConceptos,
-                estrategiaActual: estrategia
+                estrategiaActual: estrategia,
+                cicloInicio,
+                cicloFin,
+                anioProceso
             });
             setEstrategia(suggestion);
             setRefineEstrategiaConceptos(''); // Clear after refinement
@@ -443,7 +590,7 @@ export default function PmeGenerator() {
             });
 
             const { text, citations } = await generatePmeActions({
-                cantidad: finalCantidad, dimension, subdimension, objEstrategico, metaEstrategica, estrategia, planesData, useGoogleSearch, estandaresSeleccionados: estandaresContext, nudosCriticos
+                cantidad: finalCantidad, dimension, subdimension, objEstrategico, metaEstrategica, estrategia, planesData, useGoogleSearch, estandaresSeleccionados: estandaresContext, nudosCriticos, cicloInicio, cicloFin, anioProceso
             });
             setResult({ html: markdownToHtml(text), citations: citations || [] });
         } catch (error) {
@@ -518,8 +665,11 @@ export default function PmeGenerator() {
             )}
 
             <h1 className="text-3xl sm:text-4xl font-bold text-center text-pme-primary mb-1">
-                PLANIFICADOR PME 2026
+                PLANIFICADOR PME {anioProceso}
             </h1>
+            <p className="text-center font-semibold text-pme-accent text-sm mb-1">
+                Ciclo Estratégico: {cicloInicio} - {cicloFin} (Las metas y objetivos son a 4 años, la estrategia es anual)
+            </p>
             <p className="text-center text-gray-500 text-xs mb-6 italic">
                 Elaborado por claudio.jerez.santis@cormumel.cl
             </p>
@@ -608,6 +758,18 @@ export default function PmeGenerator() {
                     </select>
                 </div>
             </div>
+
+            {subdimension && (
+                <div className="mb-6 flex justify-center no-print">
+                    <button 
+                        onClick={handleLoadFromDiagnostic}
+                        className="px-6 py-3 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition shadow-sm border border-blue-200 flex items-center gap-2"
+                    >
+                        <span className="material-symbols-outlined">download</span>
+                        Cargar Propuesta de Fase Estratégica (Desde Evaluación)
+                    </button>
+                </div>
+            )}
 
             {subdimension && (estandaresPME as any)[dimension]?.[subdimension] && (
                 <div className="mb-6 bg-white border border-gray-200 p-4 rounded-md shadow-sm">

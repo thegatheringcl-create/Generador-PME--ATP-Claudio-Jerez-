@@ -72,6 +72,8 @@ export interface AppState {
   section: number; // 1 to 8
   establecimiento: string;
   anio: number;
+  cicloInicio: number;
+  cicloFin: number;
   evaluaciones: Record<string, EvaluationResult>;
   objetivosMetas: Record<string, ObjectiveMeta>;
   currentStandardId: string | null;

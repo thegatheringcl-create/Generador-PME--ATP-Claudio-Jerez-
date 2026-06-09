@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import EvaluacionEstandares from './components/EvaluacionEstandares';
+import EvaluacionIndicadores from './components/EvaluacionIndicadores';
 import PmeGenerator from './components/PmeGenerator';
 import PlanAnualCompras from './components/PlanAnualCompras';
 import RevisorPme from './components/RevisorPme';
@@ -115,7 +115,7 @@ export default function App() {
             </div>
 
             <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar bg-gray-50 rounded-t-lg">
-                <TabButton tabId="evaluacion" currentTab={activeTab} setTab={setActiveTab} icon="analytics">EVALUACIÓN ESTÁNDARES</TabButton>
+                <TabButton tabId="evaluacion" currentTab={activeTab} setTab={setActiveTab} icon="analytics">EVALUACION INDICADORES DE DESEMPEÑO</TabButton>
                 <TabButton tabId="pme" currentTab={activeTab} setTab={setActiveTab} icon="description">PLANIFICADOR PME</TabButton>
                 <TabButton tabId="compras" currentTab={activeTab} setTab={setActiveTab} icon="shopping_cart">PLAN ANUAL DE COMPRAS</TabButton>
                 <TabButton tabId="revisor" currentTab={activeTab} setTab={setActiveTab} icon="fact_check">REVISOR CALIDAD PME</TabButton>
@@ -123,7 +123,7 @@ export default function App() {
             </div>
             
             <div className="bg-white rounded-b-xl shadow-2xl overflow-hidden min-h-[600px]">
-                {activeTab === 'evaluacion' && <EvaluacionEstandares establecimiento={userEstablishment} />}
+                {activeTab === 'evaluacion' && <EvaluacionIndicadores establecimiento={userEstablishment} />}
                 {activeTab === 'pme' && <PmeGenerator />}
                 {activeTab === 'compras' && <PlanAnualCompras />}
                 {activeTab === 'revisor' && <RevisorPme />}

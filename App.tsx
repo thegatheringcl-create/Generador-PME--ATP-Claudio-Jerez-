@@ -1,20 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import EvaluacionIndicadores from './components/EvaluacionIndicadores';
 import PmeGenerator from './components/PmeGenerator';
-import PlanAnualCompras from './components/PlanAnualCompras';
-import RevisorPme from './components/RevisorPme';
-import BaseDeDatos from './components/BaseDeDatos';
 import Chatbot from './components/Chatbot';
 import Tutorial from './components/Tutorial';
 import Login from './components/Login';
 import FirebaseSettings from './components/FirebaseSettings';
 import { loginAnonymously } from './firebase';
 
-type Tab = 'evaluacion' | 'pme' | 'compras' | 'revisor' | 'database';
-
 export default function App() {
-    const [activeTab, setActiveTab] = useState<Tab>('evaluacion');
     const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
     const [isFirebaseSettingsOpen, setIsFirebaseSettingsOpen] = useState<boolean>(false);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -55,20 +48,6 @@ export default function App() {
         return <Login onLogin={handleLogin} />;
     }
 
-    const TabButton: React.FC<{ tabId: Tab, currentTab: Tab, setTab: (tab: Tab) => void, icon: string, children: React.ReactNode }> = ({ tabId, currentTab, setTab, icon, children }) => (
-        <button
-            onClick={() => setTab(tabId)}
-            className={`flex items-center justify-center gap-2 px-3 py-2 text-xs sm:text-sm font-medium rounded-t-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-pme-secondary focus:ring-offset-2 whitespace-nowrap ${
-                currentTab === tabId
-                    ? 'bg-white text-pme-primary border-b-2 border-pme-secondary shadow-[0_-2px_10px_-3px_rgba(0,0,0,0.1)]'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-            }`}
-        >
-            <span className="material-symbols-outlined text-sm sm:text-base">{icon}</span>
-            {children}
-        </button>
-    );
-
     return (
         <div className="container max-w-6xl mx-auto my-5 sm:my-10 px-4">
             {authError && (
@@ -85,7 +64,7 @@ export default function App() {
                     </button>
                 </div>
             )}
-            <div className="flex items-center justify-between mb-4 bg-pme-primary p-4 rounded-t-xl shadow-lg">
+            <div className="flex items-center justify-between mb-0 bg-pme-primary p-4 rounded-t-xl shadow-lg">
                 <div className="flex items-center gap-3">
                     <div className="bg-white/20 p-2 rounded-lg">
                         <span className="material-symbols-outlined text-white">school</span>
@@ -114,20 +93,8 @@ export default function App() {
                 </div>
             </div>
 
-            <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar bg-gray-50 rounded-t-lg">
-                <TabButton tabId="evaluacion" currentTab={activeTab} setTab={setActiveTab} icon="analytics">EVALUACION INDICADORES DE DESEMPEÑO</TabButton>
-                <TabButton tabId="pme" currentTab={activeTab} setTab={setActiveTab} icon="description">PLANIFICADOR PME</TabButton>
-                <TabButton tabId="compras" currentTab={activeTab} setTab={setActiveTab} icon="shopping_cart">PLAN ANUAL DE COMPRAS</TabButton>
-                <TabButton tabId="revisor" currentTab={activeTab} setTab={setActiveTab} icon="fact_check">REVISOR CALIDAD PME</TabButton>
-                <TabButton tabId="database" currentTab={activeTab} setTab={setActiveTab} icon="database">BASE DE DATOS</TabButton>
-            </div>
-            
-            <div className="bg-white rounded-b-xl shadow-2xl overflow-hidden min-h-[600px]">
-                {activeTab === 'evaluacion' && <EvaluacionIndicadores establecimiento={userEstablishment} />}
-                {activeTab === 'pme' && <PmeGenerator />}
-                {activeTab === 'compras' && <PlanAnualCompras />}
-                {activeTab === 'revisor' && <RevisorPme />}
-                {activeTab === 'database' && <BaseDeDatos />}
+            <div className="bg-white rounded-b-xl shadow-2xl overflow-hidden min-h-[600px] border-t border-pme-secondary">
+                <PmeGenerator />
             </div>
 
             {/* Chatbot and FAB */}

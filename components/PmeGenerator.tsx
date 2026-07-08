@@ -1,8 +1,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
-import { dataMap, objetivosNormativos, Plan } from '../constants';
+import { ESTRUCTURA_EID, PLANES_NORMATIVOS } from '../constants';
 import { estandaresPME } from '../pme-guides';
-import { ESTRUCTURA_EID } from '../constants/eid';
 import { generatePmeActions, generateStrategicObjectiveSuggestion, generateEstrategia, generateMetaEstrategica, generateFaseEstrategicaFromDiagnostic } from '../services/geminiService';
 import type { Message } from '../types';
 import MessageBox from './MessageBox';
@@ -267,7 +266,7 @@ export default function PmeGenerator() {
     const handleLoadFromDiagnostic = async () => {
         setMessage(null);
         if (!dimension || !subdimension) {
-            setMessage({ type: 'warning', text: 'Selecciona una dimensión y subdimensión primero para cargar sus datos.' });
+            setMessage({ type: 'info', text: 'Selecciona una dimensión y subdimensión primero para cargar sus datos.' });
             return;
         }
 
@@ -369,7 +368,7 @@ export default function PmeGenerator() {
                             setEstrategia(dimData.estrategia);
                         }
                     }
-                    setMessage({ type: 'warning', text: 'Se cargaron los datos guardados, pero falló la generación automática por IA.' });
+                    setMessage({ type: 'error', text: 'Se cargaron los datos guardados, pero falló la generación automática por IA.' });
                 } finally {
                     setIsGeneratingObjective(false);
                     setIsGeneratingMeta(false);
@@ -388,8 +387,9 @@ export default function PmeGenerator() {
     };
 
     const subdimensiones = useMemo(() => {
-        if (dimension && dataMap[dimension as keyof typeof dataMap]) {
-            return dataMap[dimension as keyof typeof dataMap];
+        if (dimension) {
+            const dimObj = ESTRUCTURA_EID.find(d => d.nombre === dimension || d.id === dimension);
+            return dimObj ? dimObj.subdimensiones.map(s => s.nombre) : [];
         }
         return [];
     }, [dimension]);
@@ -747,7 +747,7 @@ export default function PmeGenerator() {
                     <label htmlFor="dimension" className="block mb-2 font-bold text-pme-primary">1. Dimensión de Gestión:</label>
                     <select id="dimension" value={dimension} onChange={handleDimensionChange} className="w-full p-2 border border-gray-300 rounded-md focus:ring-pme-secondary focus:border-pme-secondary">
                         <option value="">-- Seleccione --</option>
-                        {Object.keys(dataMap).map(dim => <option key={dim} value={dim}>{dim}</option>)}
+                        {ESTRUCTURA_EID.map(dim => <option key={dim.id} value={dim.nombre}>{dim.nombre}</option>)}
                     </select>
                 </div>
                 <div>
@@ -862,28 +862,34 @@ export default function PmeGenerator() {
                         <input type="checkbox" name="planes" value="No vincular" checked={selectedPlanes.includes('No vincular')} onChange={handlePlanSelection} className="h-4 w-4 rounded border-gray-300 text-pme-danger focus:ring-pme-danger"/>
                         No vincular
                     </label>
-                    {Object.values(Plan).map(plan => (
-                        <label key={plan} className="flex items-center gap-2 text-sm text-pme-primary">
-                            <input type="checkbox" name="planes" value={plan} checked={selectedPlanes.includes(plan)} onChange={handlePlanSelection} className="h-4 w-4 rounded border-gray-300 text-pme-secondary focus:ring-pme-secondary"/>
-                            {plan}
+                    {Object.keys(PLANES_NORMATIVOS).map(planKey => {
+                        const planObj = PLANES_NORMATIVOS[planKey];
+                        return (
+                        <label key={planKey} className="flex items-center gap-2 text-sm text-pme-primary">
+                            <input type="checkbox" name="planes" value={planKey} checked={selectedPlanes.includes(planKey)} onChange={handlePlanSelection} className="h-4 w-4 rounded border-gray-300 text-pme-secondary focus:ring-pme-secondary"/>
+                            {planObj.nombre}
                         </label>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
 
             {selectedPlanes.length > 0 && !selectedPlanes.includes('No vincular') && <div className="form-group mb-4">
                 <label className="block mb-2 font-bold text-pme-primary">6. Objetivos Específicos por Plan (Selecciona uno o más):</label>
                 <div className="space-y-3">
-                    {selectedPlanes.map(planName => (
-                        <div key={planName} className="bg-gray-50 border-l-4 border-pme-accent p-3 rounded-r-md">
-                            <label className="block text-sm font-semibold text-pme-accent mb-2">{planName}</label>
+                    {selectedPlanes.map(planKey => {
+                        const planObj = PLANES_NORMATIVOS[planKey as keyof typeof PLANES_NORMATIVOS];
+                        if (!planObj) return null;
+                        return (
+                        <div key={planKey} className="bg-gray-50 border-l-4 border-pme-accent p-3 rounded-r-md">
+                            <label className="block text-sm font-semibold text-pme-accent mb-2">{planObj.nombre}</label>
                             <div className="max-h-48 overflow-y-auto space-y-2 p-2 bg-white border border-gray-200 rounded-md">
-                                {objetivosNormativos[planName as keyof typeof objetivosNormativos].map((obj, index) => (
-                                    <label key={`${planName}-${index}`} className="flex items-start gap-2 text-xs text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                {planObj.objetivos.map((obj, index) => (
+                                    <label key={`${planKey}-${index}`} className="flex items-start gap-2 text-xs text-gray-700 cursor-pointer hover:bg-gray-50 p-1 rounded">
                                         <input 
                                             type="checkbox" 
-                                            checked={(selectedPlanObjectives[planName] || []).includes(obj)} 
-                                            onChange={() => handleObjectiveToggle(planName, obj)}
+                                            checked={(selectedPlanObjectives[planKey] || []).includes(obj)} 
+                                            onChange={() => handleObjectiveToggle(planKey, obj)}
                                             className="mt-0.5 h-3 w-3 rounded border-gray-300 text-pme-accent focus:ring-pme-accent"
                                         />
                                         <span>{obj}</span>
@@ -892,17 +898,17 @@ export default function PmeGenerator() {
                                 <label className="flex items-center gap-2 text-xs text-pme-accent font-bold cursor-pointer hover:bg-gray-50 p-1 rounded">
                                     <input 
                                         type="checkbox" 
-                                        checked={(selectedPlanObjectives[planName] || []).includes("Otro")} 
-                                        onChange={() => handleObjectiveToggle(planName, "Otro")}
+                                        checked={(selectedPlanObjectives[planKey] || []).includes("Otro")} 
+                                        onChange={() => handleObjectiveToggle(planKey, "Otro")}
                                         className="h-3 w-3 rounded border-gray-300 text-pme-accent focus:ring-pme-accent"
                                     />
                                     Otro (Especificar manualmente...)
                                 </label>
-                                {(selectedPlanObjectives[planName] || []).includes("Otro") && (
+                                {(selectedPlanObjectives[planKey] || []).includes("Otro") && (
                                     <div className="px-2 pb-2 animate-in fade-in slide-in-from-top-1 duration-200">
                                         <textarea 
-                                            value={customPlanObjectives[planName] || ''}
-                                            onChange={(e) => setCustomPlanObjectives(prev => ({ ...prev, [planName]: e.target.value }))}
+                                            value={customPlanObjectives[planKey] || ''}
+                                            onChange={(e) => setCustomPlanObjectives(prev => ({ ...prev, [planKey]: e.target.value }))}
                                             placeholder="Escribe aquí el objetivo específico..."
                                             className="w-full p-2 text-[10px] border border-orange-200 rounded bg-orange-50/20 focus:ring-pme-accent focus:border-pme-accent h-16 resize-none"
                                         />
@@ -910,7 +916,7 @@ export default function PmeGenerator() {
                                 )}
                             </div>
                         </div>
-                    ))}
+                    )})}
                 </div>
             </div>}
 

@@ -51,19 +51,25 @@ export const NIVELES_INFO = {
 };
 
 export const GUIA_ESTRATEGIAS_SUBDIMENSION: Record<string, string> = {
+  // Liderazgo
   'lid_sostenedor': 'Focalizar en la responsabilidad del sostenedor, su rendición de cuentas y la comunicación efectiva con las comunidades educativas.',
   'lid_director': 'Centrarse en el liderazgo pedagógico del director, la conducción efectiva del establecimiento y la promoción de altas expectativas.',
   'plan_resultados': 'Enfocarse en la elaboración, monitoreo y uso de datos del plan de mejoramiento para la toma de decisiones informada.',
+  // Gestión Pedagógica
   'ges_curricular': 'Asegurar la implementación del currículum, la cobertura curricular y el uso de información evaluativa para la retroalimentación.',
   'ges_aula': 'Fortalecer las prácticas pedagógicas en el aula, el uso del tiempo lectivo y la creación de ambientes de aprendizaje estimulantes.',
   'ges_apoyo': 'Mejorar el apoyo al desarrollo integral de los estudiantes, incluyendo el apoyo académico, psicoafectivo y la orientación vocacional.',
+  // Formación y Convivencia
   'formacion': 'Promover la formación integral de los estudiantes, el desarrollo de valores, la vida saludable y el pensamiento crítico.',
   'convivencia': 'Fortalecer un ambiente de convivencia escolar positivo, la resolución pacífica de conflictos y el cumplimiento del reglamento interno.',
   'part_democratica': 'Fomentar la participación democrática de la comunidad educativa, el rol del Centro de Estudiantes y la comunicación con las familias.',
+  // Gestión de Recursos
   'ges_personal': 'Optimizar la gestión del personal, el desarrollo profesional docente, la evaluación del desempeño y un clima laboral positivo.',
   'ges_financieros': 'Asegurar una gestión eficiente de los recursos financieros, el cumplimiento de la normativa y la rendición de cuentas.',
   'ges_educativos': 'Garantizar la disponibilidad, mantención y uso pedagógico de los recursos educativos, incluyendo infraestructura, equipamiento y CRA.'
 };
+
+export const OBJETIVOS_METAS_POR_ESTABLECIMIENTO: Record<string, Record<string, ObjectiveMeta>> = {};
 
 const anioActual = new Date().getFullYear();
 const anioSiguiente = anioActual + 1;
@@ -91,12 +97,15 @@ const objetivosGenericos = {
   }
 };
 
-export const OBJETIVOS_METAS_POR_ESTABLECIMIENTO: Record<string, Record<string, ObjectiveMeta>> = {};
 ESTABLECIMIENTOS.forEach(est => {
   OBJETIVOS_METAS_POR_ESTABLECIMIENTO[est] = JSON.parse(JSON.stringify(objetivosGenericos));
 });
 
-export const PLANES_NORMATIVOS: Record<string, any> = {
+interface PlanNormativo {
+  nombre: string;
+  objetivos: string[];
+}
+export const PLANES_NORMATIVOS: Record<string, PlanNormativo> = {
   "PME": {
     nombre: "Plan de Mejoramiento Educativo (PME)",
     objetivos: [
